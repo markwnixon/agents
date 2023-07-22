@@ -321,7 +321,8 @@ def gatescraper(printif, dayback):
 
     # for j,startdate in enumerate(startdates):
     # enddate=enddates[j]
-    with Display():
+    if 1 == 1:
+    #with Display():
     #display = Display(visible=0, size=(800, 1080))
     #display.start()
         opts = FirefoxOptions()
