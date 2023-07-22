@@ -5,6 +5,10 @@ import time
 from datetime import datetime, timedelta
 from pyvirtualdisplay import Display
 from selenium import webdriver
+
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+firefox_binary = FirefoxBinary()
+
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
 #from PyPDF2 import PageObject
@@ -325,7 +329,7 @@ def gatescraper(printif, dayback):
         logontrys = 1
         logonyes = 0
         url1 = websites['gate']
-        browser = webdriver.Firefox()
+        browser = webdriver.Firefox(firefox_binary=firefox_binary)
 
         while logontrys<4 and logonyes == 0:
 
