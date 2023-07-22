@@ -7,7 +7,7 @@ from pyvirtualdisplay import Display
 from selenium import webdriver
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
-from PyPDF2.pdf import PageObject
+#from PyPDF2 import PageObject
 from utils import hasinput
 
 #Handle the input arguments from script file
