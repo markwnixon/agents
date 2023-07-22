@@ -17,6 +17,9 @@ try:
     print(f'Received input argument of SCAC: {scac}')
 except:
     print('Must have a SCAC code argument or will get from setup file')
+    print('Setting SCAC to FELA since none provided')
+    scac = 'fela'
+    nt = 'remote'
 
 
 linkto = 'newclass8'
