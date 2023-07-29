@@ -1,11 +1,13 @@
 import os
 import sys
+import socket
+from utils import getpaths
 from bs4 import BeautifulSoup as soup
 import time
 from datetime import datetime, timedelta
 from pyvirtualdisplay import Display
 from selenium import webdriver
-from selenium.webdriver import FirefoxOptions
+#from selenium.webdriver import FirefoxOptions
 
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
@@ -23,37 +25,34 @@ except:
     scac = 'fela'
     nt = 'remote'
 
-
-linkto = 'newclass8'
 scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
+
     print(f'Running FFF_task_gate_now for {scac} in tunnel mode: {nt}')
+    host_name = socket.gethostname()
+    print("Host Name:", host_name)
+    dropbox_path = getpaths(host_name, 'dropbox')
+    ar_path = f'{dropbox_path}/Dray/{scac}_AR_Report.xlsx'
+    sys_path = getpaths(host_name, 'system')
+    sys.path.append(sys_path) #So we can import CCC_system_setup from full path
+
     os.environ['SCAC'] = scac
     os.environ['PURPOSE'] = 'script'
-    os.environ['MACHINE'] = 'ubuntu1700'
+    os.environ['MACHINE'] = host_name
     os.environ['TUNNEL'] = nt
-    if linkto == 'oldclass8':
-        os.environ['LINKTO'] = 'oldclass8'
-        from remote_db_connect import tunnel, db
-        from models import Orders, Interchange, Invoices
-    elif linkto == 'newclass8':
-        os.environ['LINKTO'] = 'newclass8'
-        from remote_db_connect import db
-        if nt == 'remote': from remote_db_connect import tunnel
-        from models8 import Interchange, Orders, Drivers, Pins
-        from CCC_system_setup import websites, usernames, passwords, addpath3, addpath
-        from email_reports import emailtxt
-        from cronfuncs import conmatch
+
+    from remote_db_connect import db
+    if nt == 'remote': from remote_db_connect import tunnel
+    from models8 import Interchange, Orders, Drivers, Pins
+    from CCC_system_setup import websites, usernames, passwords, addpath3, addpath
+    from email_reports import emailtxt
+    from cronfuncs import conmatch
 else:
     scac = 'nogo'
     print('The argument must be FELA or OSLM or NEVO so getting inputs for CCC-system_setup')
     from CCC_system_setup import addpath3, websites, usernames, passwords, lt, scac, nt, addpath
-
-    if linkto == 'oldclass8':
-        from models import Interchange, Orders
-    elif linkto == 'newclass8':
-        from models8 import Interchange, Orders, Pins
+    from models8 import Interchange, Orders, Pins
 printif = 0
 
 runat = datetime.now()
@@ -321,16 +320,15 @@ def gatescraper(printif, dayback):
 
     # for j,startdate in enumerate(startdates):
     # enddate=enddates[j]
-    if 1 == 1:
-    #with Display():
+    with Display():
     #display = Display(visible=0, size=(800, 1080))
     #display.start()
-        opts = FirefoxOptions()
-        opts.add_argument('--headless')
+        #opts = FirefoxOptions()
+        #opts.add_argument('--headless')
         logontrys = 1
         logonyes = 0
         url1 = websites['gate']
-        browser = webdriver.Firefox(options=opts)
+        browser = webdriver.Firefox()
 
         while logontrys<4 and logonyes == 0:
 
@@ -454,14 +452,11 @@ def gatescraper(printif, dayback):
                         if idat is None:
 
                             contype = f'{cr[4]} {cr[5]} {cr[6]}'
-                            if linkto == 'newclass8':
-                                input = Interchange(Container=thiscon, TruckNumber='NAY', Driver='NAY', Chassis=cr[8],
-                                                    Date=mydate, Release=cr[11], GrossWt='NAY', Seals='NAY', ConType=contype, CargoWt='NAY',
-                                                    Time=mytime, Status='AAAAAA', Source='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None)
-                            if linkto == 'oldclass8':
-                                input = Interchange(Container=thiscon, TruckNumber='NAY', Driver='NAY', Chassis=cr[8],
-                                                    Date=mydate, Release=cr[11], GrossWt='NAY', Seals='NAY', ConType=contype, CargoWt='NAY',
-                                                    Time=mytime, Status='AAAAAA', Original='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None)
+
+                            input = Interchange(Container=thiscon, TruckNumber='NAY', Driver='NAY', Chassis=cr[8],
+                                                Date=mydate, Release=cr[11], GrossWt='NAY', Seals='NAY', ConType=contype, CargoWt='NAY',
+                                                Time=mytime, Status='AAAAAA', Source='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None)
+
                             db.session.add(input)
                             db.session.commit()
                             newadd = 1
@@ -517,10 +512,7 @@ def gatescraper(printif, dayback):
                         idat.GrossWt = conset.get("GrossWt")
                         idat.CargoWt = conset.get("CargoWt")
                         idat.Seals = conset.get("Seals")
-                        if linkto == 'newclass8':
-                            idat.Source = viewfile
-                        if linkto == 'oldclass8':
-                            idat.Original = viewfile
+                        idat.Source = viewfile
 
                         newinterchange.append(idat.id)
 
@@ -531,10 +523,7 @@ def gatescraper(printif, dayback):
                         newfile = outpath + viewfile
 
                         #newfile = moveticks(newfile)
-                        if linkto == 'oldclass8':
-                            copyline = f'scp {newfile} {websites["ssh_data"]+"vinterchange"}'
-                        elif linkto == 'newclass8':
-                            copyline = f'scp {newfile} {websites["ssh_data"]+"vGate"}'
+                        copyline = f'scp {newfile} {websites["ssh_data"]+"vGate"}'
 
                         print('copyline=',copyline)
                         os.system(copyline)

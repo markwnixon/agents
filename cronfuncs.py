@@ -1,11 +1,6 @@
 import datetime
-from CCC_system_setup import lt
 from remote_db_connect import db
-if lt == 'oldclass8':
-    from models import JO, Drops, Interchange, Orders
-elif lt == 'newclass8':
-    from models8 import JO, Drops, Interchange, Orders
-
+from models8 import JO, Drops, Interchange, Orders
 from datetime import timedelta
 from utils import hasinput
 

@@ -1,3 +1,17 @@
+
+def getpaths(machine,pathto):
+    if machine == 'ubuntu1700':
+        if pathto == 'dropbox': return '/mnt/Ubuntu1TB01/Dropbox'
+        if pathto == 'system': return '/mnt/Ubuntu1TB01/Dropbox/system'
+        if pathto == 'working': return '/home/mark/flask/crontasks'
+    elif machine == 'mserver':
+        if pathto == 'dropbox': return '/home/mark/Dropbox'
+    elif machine == 'bee1':
+        if pathto == 'dropbox': return '/home/disp1/Dropbox'
+    else:
+        return '/home/mark/Dropbox'
+
+
 def d2s(instr):
     try:
         instr = instr.replace('$', '').replace(',', '')
