@@ -20,6 +20,7 @@ over30 = over30.date()
 #Handle the input arguments from script file
 try:
     scac = sys.argv[1]
+    nt = 'remote'
 except:
     print('Must have at least one argument...FELA or OSLM or NEVO')
     scac = 'nogo'
