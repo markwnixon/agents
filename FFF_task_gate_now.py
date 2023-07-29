@@ -337,12 +337,12 @@ def gatescraper(printif, dayback):
             time.sleep(4)
             print('Done Sleeping') if printif == 1 else 1
             print('Getting xpath') if printif == 1 else 1
-            selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
+            selectElem = browser.find_element(By.XPATH,'//*[@id="UserName"]')
             print('Got xpath for Username') if printif == 1 else 1
             selectElem.clear()
             selectElem.send_keys(username)
 
-            selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
+            selectElem = browser.find_element(By.XPATH,'//*[@id="Password"]')
             print('Got xpath for Password') if printif == 1 else 1
             selectElem.clear()
             selectElem.send_keys(password)
