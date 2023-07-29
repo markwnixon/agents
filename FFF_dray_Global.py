@@ -5,6 +5,8 @@ from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Fo
 from openpyxl.utils import get_column_letter
 import datetime
 from datetime import timedelta
+import socket
+from utils import getpaths
 
 today = datetime.datetime.today()
 today_str = today.strftime("%m/%d/%Y")
@@ -22,7 +24,7 @@ except:
     print('Must have at least one argument...FELA or OSLM or NEVO')
     scac = 'nogo'
 
-
+scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     print(f'Running FFF_dray_Global for {scac}')
