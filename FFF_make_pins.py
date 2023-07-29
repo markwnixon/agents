@@ -46,7 +46,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     os.environ['MACHINE'] = host_name
     os.environ['TUNNEL'] = nt
 
-    from remote_db_connect import db, app
+    from remote_db_connect import db
     if nt == 'remote': from remote_db_connect import tunnel
     from models8 import Interchange, Orders, Drivers, Pins
     from CCC_system_setup import websites, usernames, passwords
