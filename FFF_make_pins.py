@@ -46,7 +46,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     os.environ['MACHINE'] = host_name
     os.environ['TUNNEL'] = nt
 
-    from remote_db_connect import db
+    from remote_db_connect import db, app
     if nt == 'remote': from remote_db_connect import tunnel
     from models8 import Interchange, Orders, Drivers, Pins
     from CCC_system_setup import websites, usernames, passwords
@@ -423,7 +423,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
 
 
-
+#*********************************************************************
 
 pdata = Pins.query.filter(Pins.OutPin == '0').all()
 nruns = len(pdata)

@@ -1,5 +1,6 @@
-from CCC_system_setup import purpose
-print(f'In models CCC system granted purpose:{purpose}')
+import os
+purpose = os.environ['PURPOSE']
+print(f'Models has purpose:{purpose}')
 if purpose == 'webapp':
     from runmain import db
 else:
