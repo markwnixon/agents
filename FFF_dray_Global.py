@@ -20,12 +20,12 @@ over30 = over30.date()
 #Handle the input arguments from script file
 try:
     scac = sys.argv[1]
-    nt = 'remote'
 except:
     print('Must have at least one argument...FELA or OSLM or NEVO')
-    scac = 'nogo'
+    scac = 'fela'
 
 scac = scac.upper()
+nt = 'remote'
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     print(f'Running FFF_dray_Global for {scac}')
@@ -90,6 +90,8 @@ if scac != 'nogo':
 
     if success == 1:
         for gdat in gdata:
+            bk1 = 'None'
+            bk2 = 'None'
             print(gdat.id, gdat.Date)
             jo = gdat.Jo
             links = gdat.Links
@@ -103,8 +105,7 @@ if scac != 'nogo':
             if len(int_data) >= 2:
                 bk2 = int_data[1].Release
                 dt2 = int_data[1].Date
-            else:
-                bk2 = 'None'
+
             if bk1 == 'DP OP' or bk2 == 'DP OP':
                 print(f'This booking {bk1} and {bk2} has DP OP')
             else:
