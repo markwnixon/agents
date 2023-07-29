@@ -92,6 +92,9 @@ if scac != 'nogo':
         for gdat in gdata:
             bk1 = 'None'
             bk2 = 'None'
+            con = 'None'
+            dt1 = None
+            dt2 = None
             print(gdat.id, gdat.Date)
             jo = gdat.Jo
             links = gdat.Links
