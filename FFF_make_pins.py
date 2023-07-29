@@ -14,12 +14,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import *
-
-import pdfkit
 from utils import hasinput
 
-from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
-from PyPDF2.pdf import PageObject
 
 #Handle the input arguments from script file
 #Handle the input arguments from script file
