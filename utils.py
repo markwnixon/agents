@@ -6,8 +6,12 @@ def getpaths(machine,pathto):
         if pathto == 'working': return '/home/mark/flask/crontasks'
     elif machine == 'mserver':
         if pathto == 'dropbox': return '/home/mark/Dropbox'
+        if pathto == 'system': return '/home/mark/Dropbox/system'
+        if pathto == 'working': return '/home/mark/flask/crontasks'
     elif machine == 'bee1':
         if pathto == 'dropbox': return '/home/disp1/Dropbox'
+        if pathto == 'system': return '/home/disp1/Dropbox/system'
+        if pathto == 'working': return '/home/disp1/flask/crontasks'
     else:
         return '/home/mark/Dropbox'
 

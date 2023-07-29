@@ -1,7 +1,8 @@
 #!/bin/bash
 echo "Running FFF_dray_ARcheck.py"
-cd /home/mark/flask
+echo $USER
+cd /home/$USER/flask
 source flaskenv/bin/activate
-cd /home/mark/flask/agents
+cd /home/$USER/flask/agents
 python3 FFF_dray_ARcheck.py "$1"
 
