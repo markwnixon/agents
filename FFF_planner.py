@@ -45,7 +45,6 @@ else:
 if scac != 'nogo':
 
     print(f'Running Planner for {scac}')
-
     from CCC_system_setup import companydata, usernames, passwords, imap_url
     from cronfuncs import tunneltest
     success = tunneltest()
