@@ -3,15 +3,15 @@ def getpaths(machine,pathto):
     if machine == 'ubuntu1700':
         if pathto == 'dropbox': return '/mnt/Ubuntu1TB01/Dropbox'
         if pathto == 'system': return '/mnt/Ubuntu1TB01/Dropbox/system'
-        if pathto == 'working': return '/home/mark/flask/crontasks'
+        if pathto == 'working': return '/home/mark/flask/agents'
     elif machine == 'mserver':
         if pathto == 'dropbox': return '/home/mark/Dropbox'
         if pathto == 'system': return '/home/mark/Dropbox/system'
-        if pathto == 'working': return '/home/mark/flask/crontasks'
+        if pathto == 'working': return '/home/mark/flask/agents'
     elif machine == 'bee1':
         if pathto == 'dropbox': return '/home/disp1/Dropbox'
         if pathto == 'system': return '/home/disp1/Dropbox/system'
-        if pathto == 'working': return '/home/disp1/flask/crontasks'
+        if pathto == 'working': return '/home/disp1/flask/agents'
     else:
         return '/home/mark/Dropbox'
 
