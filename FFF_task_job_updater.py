@@ -32,7 +32,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
 
     from remote_db_connect import tunnel, db
     from models8 import Interchange, Orders, Drivers, Pins, Orders, OverSeas, People, Drops
-    from CCC_system_setup import websites, usernames, passwords, addpath3, addpath
+    from CCC_system_setup import websites, usernames, passwords, addpath3, addpath, addpaths
     from email_reports import emailtxt
     from cronfuncs import conmatch
 else:
@@ -68,7 +68,12 @@ def blendticks(gfile1,gfile2,outfile):
     reader2 = PdfFileReader(open(gfile2, 'rb'))
     p2 = reader2.getPage(0)
 
-    g3 = addpath(f'static/{scac}/data/vGate/blank.pdf')
+    #g3 = addpath(f'static/{scac}/data/vGate/blank.pdf')
+    paths = addpaths()
+    print(f'paths are {paths}')
+    thispath = paths[3]
+    g3 = f'{thispath}blank.pdf'
+    print(g3)
     reader3 = PdfFileReader(open(g3, 'rb'))
     p3 = reader3.getPage(0)
     #p2.cropBox.lowerLeft = (50,400)
