@@ -24,6 +24,10 @@ def getpaths(machine,pathto):
         if pathto == 'dropbox': return '/home/mark/Dropbox'
         if pathto == 'system': return '/home/mark/Dropbox/system'
         if pathto == 'working': return '/home/mark/flask/agents'
+    elif machine == 'localhost':
+        if pathto == 'dropbox': return '/home/mark/Dropbox'
+        if pathto == 'system': return '/home/mark/Dropbox/system'
+        if pathto == 'working': return '/home/mark/flask/agents'
     else:
         return '/home/mark/Dropbox'
 
