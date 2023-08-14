@@ -103,6 +103,7 @@ def blendticks(gfile1,gfile2,outfile):
     paths = addpaths()
     thispath = paths[3]
     g3 = f'{thispath}blank.pdf'
+    print(f'g3={g3}')
 
     reader3 = PdfFileReader(open(g3, 'rb'))
     p3 = reader3.getPage(0)
@@ -522,10 +523,12 @@ def gatescraper(printif, dayback):
 
                         db.session.commit()
 
-                        print(f'con_data:{con_data}')
+                        #print(f'con_data:{con_data}')
                         print(f'outpath is: {outpath}')
                         print(f'viewfile is {viewfile}')
-                        pdfkit.from_string(con_data, outpath+viewfile)
+                        pfile = outpath+viewfile
+                        print(f'pfile is {pfile}')
+                        pdfkit.from_string(con_data, pfile)
                         newfile = outpath + viewfile
 
                         #newfile = moveticks(newfile)

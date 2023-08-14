@@ -71,6 +71,7 @@ def blendticks(gfile1,gfile2,outfile):
     paths = addpaths()
     thispath = paths[3]
     g3 = f'{thispath}blank.pdf'
+    print(f'g3={g3}')
 
     reader3 = PdfFileReader(open(g3, 'rb'))
     p3 = reader3.getPage(0)
