@@ -241,7 +241,10 @@ def update_records(thiscon, id):
                 ikat.Status = 'IO'
                 imat.Status = 'IO'
                 db.session.commit()
-                make_blended(okat,imat,ikat)
+                try:
+                    make_blended(okat,imat,ikat)
+                except:
+                    print('Could not produce blended tickets')
             else:
                 print(f'Could not find a match for the Empty in container {thiscon}')
                 ikat.Status = 'No Out'
@@ -264,7 +267,11 @@ def update_records(thiscon, id):
                 ikat.Status = 'IO'
                 imat.Status = 'IO'
                 db.session.commit()
-                make_blended(okat,imat,ikat)
+                try:
+                    make_blended(okat,imat,ikat)
+                except:
+                    print('Could not produce blended tickets')
+
             else:
                 print(f'Could not find a match for the load in container {thiscon}')
                 ikat.Status = 'No Out'
