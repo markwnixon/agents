@@ -45,13 +45,13 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     from remote_db_connect import db
     if nt == 'remote': from remote_db_connect import tunnel
     from models8 import Interchange, Orders, Drivers, Pins
-    from CCC_system_setup import websites, usernames, passwords, addpath3, addpath
+    from CCC_system_setup import websites, usernames, passwords, addpath3, addpath, addpaths
     from email_reports import emailtxt
     from cronfuncs import conmatch
 else:
     scac = 'nogo'
     print('The argument must be FELA or OSLM or NEVO so getting inputs for CCC-system_setup')
-    from CCC_system_setup import addpath3, websites, usernames, passwords, lt, scac, nt, addpath
+    from CCC_system_setup import addpath3, websites, usernames, passwords, lt, scac, nt, addpath, addpaths
     from models8 import Interchange, Orders, Pins
 
 printif = 0
@@ -100,7 +100,10 @@ def blendticks(gfile1,gfile2,outfile):
     reader2 = PdfFileReader(open(gfile2, 'rb'))
     p2 = reader2.getPage(0)
 
-    g3 = '/home/mark/flask/crontasks/incoming/blank.pdf'
+    paths = addpaths()
+    thispath = paths[3]
+    g3 = f'{thispath}blank.pdf'
+
     reader3 = PdfFileReader(open(g3, 'rb'))
     p3 = reader3.getPage(0)
     #p2.cropBox.lowerLeft = (50,400)
@@ -417,7 +420,7 @@ def gatescraper(printif, dayback):
                 return addtext, newadd, newinterchange, errors
 
 
-            try:
+            if 1==1:
                 #containers = browser.find_elements_by_xpath('//a[contains(@href,"ticket")]')
                 conrecords = []
                 for i in range(1,numrec+1):
@@ -519,22 +522,24 @@ def gatescraper(printif, dayback):
 
                         db.session.commit()
 
-                        #print(f'con_data:{con_data}')
+                        print(f'con_data:{con_data}')
+                        print(f'outpath is: {outpath}')
+                        print(f'viewfile is {viewfile}')
                         pdfkit.from_string(con_data, outpath+viewfile)
                         newfile = outpath + viewfile
 
                         #newfile = moveticks(newfile)
                         copyline = f'scp {newfile} {websites["ssh_data"]+"vGate"}'
-
                         print('copyline=',copyline)
                         os.system(copyline)
                         #os.remove(newfile)
                         print('Now updating records')
                         retval = update_records(thiscon, idat.id)
                         print(f'The return value is {retval}')
-            except:
+            if 1 == 2:
                 addtext = addtext + f'\n\nFailure with something in container match system'
                 errors += 1
+                print('Experienced an error in the container records area')
                 return addtext, newadd, newinterchange, errors
 
         else:
