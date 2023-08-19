@@ -62,15 +62,13 @@ printif = 0
 runat = datetime.now()
 tnow = runat.strftime("%M")
 mins = int(tnow)
+today = runat.date()
 print(' ')
-print('_____________________________________________________')
-print('This sequence run at ', runat, mins)
-print('_____________________________________________________')
+print('_______________________________________________________')
+print(f'This sequence run date: {today}')
+print('_______________________________________________________')
 print(' ')
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
-
-lookback = runat - timedelta(30)
-lbdate = lookback.date()
 
 def closethepopup(browser, closebutx):
     handles = browser.window_handles
@@ -85,7 +83,7 @@ def closethepopup(browser, closebutx):
 def softwait(browser, xpath):
     closebutx = "//*[contains(@type,'button')]"
     try:
-        wait = WebDriverWait(browser, 30, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
+        wait = WebDriverWait(browser, 16, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
         elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
         #elem = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, xpath)))
     except:
@@ -110,7 +108,7 @@ def fillapptdata(browser, d, p, thisdate):
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
     selectElem.send_keys(thisdate)
     selectElem.submit()
-    time.sleep(1)
+    time.sleep(2)
 
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
     selectElem.select_by_index(1)
@@ -181,11 +179,6 @@ def logonfox(err):
 
 def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     pinget = 0
-
-    today = datetime.today()
-    cutoff = datetime.now() - timedelta(30)
-    cutoff = cutoff.date()
-
     thisdate = datetime.strftime(p.Date + timedelta(0), '%m/%d/%Y')
     print(f'The pins will be created for date: {thisdate}')
 
@@ -427,15 +420,36 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
 #*********************************************************************
 
-pdata = Pins.query.filter(Pins.OutPin == '0').all()
+pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Date >= today)).all()
 nruns = len(pdata)
 logonyes=0
+if nruns == 0:
+    print(f'There are no pins required per database')
+    quit()
+if nruns > 0:
+    print(f'The pin database requires {nruns} new interchange sequences as follows:')
+    for pdat in pdata:
+        if hasinput(pdat.InBook): intype = 'Load In'
+        elif hasinput(pdat.InCon): intype = 'Empty In'
+        else:
+            intype = 'NoInType'
+            inbox = 0
+
+        if hasinput(pdat.OutCon): outtype = 'Load Out'
+        elif hasinput(pdat.OutBook): outtype = 'Empty Out'
+        else:
+            outtype = 'NoOutType'
+            outbox = 0
+        print(f'Date: {pdat.Date} Driver: {pdat.Driver} Unit: {pdat.Unit} In-Type: {intype}  Out-Type: {outtype}')
+
+
+
 if nruns > 0:
     #Log on to browser
     err = []
     browser, url, logonyes, logontrys, err = logonfox(err)
 
-print(f'The pin database requires {nruns} new interchange sequences')
+
 if logonyes:
     for jx, pdat in enumerate(pdata):
         inbox = 1
