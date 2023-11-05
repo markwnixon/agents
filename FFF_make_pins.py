@@ -108,10 +108,12 @@ def fillapptdata(browser, d, p, thisdate):
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
     selectElem.send_keys(thisdate)
     selectElem.submit()
-    time.sleep(2)
+    time.sleep(3)
 
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
+    time.sleep(1)
     selectElem.select_by_index(1)
+
 
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_LicensePlateNumber"]')
     selectElem.send_keys(p.Tag)
