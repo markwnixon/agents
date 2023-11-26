@@ -9,9 +9,9 @@ def getpaths(machine,pathto):
         if pathto == 'system': return '/home/mark/Dropbox/system'
         if pathto == 'working': return '/home/mark/flask/agents'
     elif machine == 'bee1':
-        if pathto == 'dropbox': return '/home/disp1/Dropbox'
-        if pathto == 'system': return '/home/disp1/Dropbox/system'
-        if pathto == 'working': return '/home/disp1/flask/agents'
+        if pathto == 'dropbox': return '/home/elie/Dropbox'
+        if pathto == 'system': return '/home/elie/Dropbox/system'
+        if pathto == 'working': return '/home/elie/flask/agents'
     elif machine == 'vivo':
         if pathto == 'dropbox': return '/home/mark/Dropbox'
         if pathto == 'system': return '/home/mark/Dropbox/system'
