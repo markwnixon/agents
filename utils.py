@@ -8,7 +8,7 @@ def getpaths(machine,pathto):
         if pathto == 'dropbox': return '/home/mark/Dropbox'
         if pathto == 'system': return '/home/mark/Dropbox/system'
         if pathto == 'working': return '/home/mark/flask/agents'
-    elif machine == 'bee1':
+    elif machine == 'bee1' or machine == 'bee3':
         if pathto == 'dropbox': return '/home/elie/Dropbox'
         if pathto == 'system': return '/home/elie/Dropbox/system'
         if pathto == 'working': return '/home/elie/flask/agents'
