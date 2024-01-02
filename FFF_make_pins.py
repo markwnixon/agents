@@ -490,7 +490,7 @@ if logonyes:
 
         ddat = Drivers.query.filter(Drivers.Name==pdat.Driver).first()
         if ddat is not None:
-            print(f'We have driver {ddat.Name} with phone {ddat.Phone} and carrier {ddat.Carrier}')
+            print(f'We have driver {ddat.Name} with phone {ddat.Phone}')
             print(f'We have driver {ddat.Name} driving truck {pdat.Unit} with tag {pdat.Tag}')
             print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
             print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')

@@ -400,7 +400,7 @@ if scac != 'nogo':
                         if pdat is None:
                             input = Pins(Date=lasttom, Driver=None, InBook=inbook, InCon=incon, InChas=inchas,
                                          InPin='0', OutBook=outbook, OutCon=None, OutChas=inchas, OutPin='0',
-                                         Unit=None, Tag=None, Phone=None, Carrier=None, Intext=intext, Outtext=outtext)
+                                         Unit=None, Tag=None, Phone=None, Intext=intext, Outtext=outtext, Notes=None, Timeslot=0)
                             db.session.add(input)
                             db.session.commit()
 
