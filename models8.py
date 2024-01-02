@@ -1568,11 +1568,12 @@ class Pins(db.Model):
     Unit = db.Column('Unit', db.String(45))
     Tag = db.Column('Tag', db.String(45))
     Phone = db.Column('Phone', db.String(45))
-    Carrier = db.Column('Carrier', db.String(45))
-    Intext = db.Column('Intext', db.String(45))
-    Outtext = db.Column('Outtext', db.String(45))
+    Timeslot = db.Column('Timeslot', db.Integer)
+    Intext = db.Column('Intext', db.String(200))
+    Outtext = db.Column('Outtext', db.String(200))
+    Notes = db.Column('Notes', db.String(200))
 
-    def __init__(self, Date, Driver, InBook, InCon, InChas, InPin, OutBook, OutCon, OutChas, OutPin, Unit, Tag, Phone, Carrier, Intext, Outtext):
+    def __init__(self, Date, Driver, InBook, InCon, InChas, InPin, OutBook, OutCon, OutChas, OutPin, Unit, Tag, Phone, Timeslot, Intext, Outtext, Notes):
         self.Date = Date
         self.Driver = Driver
         self.InBook = InBook
@@ -1586,9 +1587,10 @@ class Pins(db.Model):
         self.Unit = Unit
         self.Tag = Tag
         self.Phone = Phone
-        self.Carrier = Carrier
+        self.Timeslot = Timeslot
         self.Intext = Intext
         self.Outtext = Outtext
+        self.Notes = Notes
 
 class Ships(db.Model):
     __tablename__ = 'ships'

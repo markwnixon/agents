@@ -112,17 +112,29 @@ def fillapptdata(browser, d, p, thisdate):
 
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
     time.sleep(1)
-    selectElem.select_by_index(1)
+    itime = p.Timeslot
+    sopts = len(selectElem.options)
+    if itime == 4: itime = sopts-1
+    if itime > sopts-1: itime = sopts-1
+    print(f'Found {sopts} selections')
+    for ix, i in enumerate(selectElem.options):
+        print(ix, i.text)
+        if ix == itime: timeslotname = i.text
+
+    selectElem.select_by_index(itime)
 
 
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_LicensePlateNumber"]')
     selectElem.send_keys(p.Tag)
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_DriverMobileNumber"]')
     selectElem.send_keys(d.Phone)
+    #selectElem.send_keys('7578973266')
 
     #selectElem = Select(browser.find_element_by_xpath('// *[ @ id = "mobileCarrier"]'))
     #time.sleep(1)
     #selectElem.select_by_visible_text(d.Carrier)
+    ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname}'
+    return ret_text
 
 def logonfox(err):
     # First time thru need to logon
@@ -221,7 +233,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 softwait(browser, '//*[@id="FullInAppts_0__ContainerNumber"]')
 
                 #Load In Driver info
-                fillapptdata(browser, d, p, thisdate)
+                note_text = fillapptdata(browser, d, p, thisdate)
 
                 #Load In Completion of container and chassis
                 selectElem = browser.find_element_by_xpath('//*[@id="FullInAppts_0__ContainerNumber"]')
@@ -268,7 +280,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 time.sleep(1)
 
                 # Empty In Driver Data
-                fillapptdata(browser, d, p, thisdate)
+                note_text = fillapptdata(browser, d, p, thisdate)
 
                 #softwait(browser, "/html/body/div[1]/div[6]/div[5]/div[1]/div/div[3]/div[1]/form/div[2]/div/div[2]/button/span")
 
@@ -325,7 +337,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 if not inbox:
                     #If there is no incoming box then we have to fill the driver data also
                     softwait(browser, '//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
-                    fillapptdata(browser, d, p, thisdate)
+                    note_text = fillapptdata(browser, d, p, thisdate)
                     selectElem = browser.find_element_by_xpath('//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
                     selectElem.send_keys(p.OutChas)
                     time.sleep(1)
@@ -377,7 +389,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
 
                 # Only fill in the driver/truck data if no in box, otherwise it is there already
-                if not inbox: fillapptdata(browser, d, p, thisdate)
+                if not inbox: note_text = fillapptdata(browser, d, p, thisdate)
 
                 selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
                 selectElem.send_keys(p.OutBook)
@@ -412,8 +424,10 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
 
     if pinget:
+        if inbox and not outbox: p.Outtext = 'Nothing Out'
+        if outbox and not inbox: p.Intext = f'Bare chassis in {p.InChas}'
         p.Phone = d.Phone
-        p.Carrier = d.Carrier
+        p.Notes = note_text
         db.session.commit()
 
 
@@ -422,7 +436,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
 #*********************************************************************
 
-pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Date >= today)).all()
+pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot > 0) & (Pins.Date >= today)).all()
 nruns = len(pdata)
 logonyes=0
 if nruns == 0:
