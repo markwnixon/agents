@@ -262,30 +262,21 @@ def update_records(thiscon, id):
                 ikat.Status = 'No Out'
 
         if movetyp == 'Load In':
-            #This should be an export, container number needs to be created.
-            #However, we could be part of multiple bookings so we need to check on that first
-            edata = Orders.query.filter((Orders.HaulType == 'Dray Export') & (Orders.Booking.contains(release)) & (Orders.Date > lbdate)).all()
-            nbk = len(edata)
-            if nbk > 1:
-                #we need to extract which booking in the sequence we are pulling
-                for ix, edat in enumerate(edata):
-                    release = edat.Booking
-                    container = edat.Container
-                    if not hasinput(container): break
-                # The first order without a container value is used
-
-
             #This should be an export return
             okat = Orders.query.filter(Orders.Container==thiscon).first()
             driver = get_driver(movetyp, con)
             if okat is not None:
+                inbook = okat.BOL
+                if not hasinput(inbook): inbook = okat.Booking
+                if len(inbook) < 4: inbook = okat.Booking
+                print(f'******************the in booking for {thiscon} with type {movetyp} is **{inbook}*************')
                 ikat.Jo = okat.Jo
                 ikat.Company = okat.Shipper
                 ikat.Driver = driver
-                ikat.Release = release
+                ikat.Release = inbook
                 okat.Chassis = ikat.Chassis
                 okat.Date2 = ikat.Date
-                okat.BOL = release
+                okat.BOL = inbook
                 okat.Hstat = 2
                 db.session.commit()
             imat = Interchange.query.filter( (Interchange.Container == thiscon) & (Interchange.Type.contains('Out')) & (Interchange.Date > lbdate)).first()
