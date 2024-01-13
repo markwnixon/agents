@@ -285,7 +285,7 @@ def update_records(thiscon, id):
                 ikat.Release = release
                 okat.Chassis = ikat.Chassis
                 okat.Date2 = ikat.Date
-                okat.BOL = ikat.Release
+                okat.BOL = release
                 okat.Hstat = 2
                 db.session.commit()
             imat = Interchange.query.filter( (Interchange.Container == thiscon) & (Interchange.Type.contains('Out')) & (Interchange.Date > lbdate)).first()
