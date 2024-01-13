@@ -7,7 +7,6 @@ import time
 from datetime import datetime, timedelta
 from pyvirtualdisplay import Display
 from selenium import webdriver
-#from selenium.webdriver import FirefoxOptions
 
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
@@ -22,7 +21,7 @@ try:
 except:
     print('Must have a SCAC code argument or will get from setup file')
     print('Setting SCAC to FELA since none provided')
-    scac = 'fela'
+    scac = 'oslm'
     nt = 'remote'
 
 scac = scac.upper()
@@ -92,6 +91,7 @@ def get_driver(movetyp,finder):
         if pdat is not None:
             return pdat.Driver
     return driver
+
 def blendticks(gfile1,gfile2,outfile):
 
     reader1 = PdfFileReader(open(gfile1, 'rb'))
@@ -210,6 +210,17 @@ def update_records(thiscon, id):
 
         if movetyp == 'Empty Out':
             #This should be an export, container number needs to be created.
+            #However, we could be part of multiple bookings so we need to check on that first
+            edata = Orders.query.filter((Orders.HaulType == 'Dray Export') & (Orders.Booking.contains(release)) & (Orders.Date > lbdate)).all()
+            nbk = len(edata)
+            if nbk > 1:
+                #we need to extract which booking in the sequence we are pulling
+                for ix, edat in enumerate(edata):
+                    release = edat.Booking
+                    container = edat.Container
+                    if not hasinput(container): break
+                # The first order without a container value is used
+
             okat = Orders.query.filter(Orders.Booking == release).order_by(Orders.id.desc()).first()
             driver = get_driver(movetyp, release)
             if okat is not None:
@@ -217,6 +228,7 @@ def update_records(thiscon, id):
                 ikat.Status = 'Out'
                 ikat.Company = okat.Shipper
                 ikat.Driver = driver
+                ikat.Release = release
                 okat.Container = con
                 okat.ConType = ikat.ConType
                 okat.Chassis = ikat.Chassis
@@ -250,6 +262,19 @@ def update_records(thiscon, id):
                 ikat.Status = 'No Out'
 
         if movetyp == 'Load In':
+            #This should be an export, container number needs to be created.
+            #However, we could be part of multiple bookings so we need to check on that first
+            edata = Orders.query.filter((Orders.HaulType == 'Dray Export') & (Orders.Booking.contains(release)) & (Orders.Date > lbdate)).all()
+            nbk = len(edata)
+            if nbk > 1:
+                #we need to extract which booking in the sequence we are pulling
+                for ix, edat in enumerate(edata):
+                    release = edat.Booking
+                    container = edat.Container
+                    if not hasinput(container): break
+                # The first order without a container value is used
+
+
             #This should be an export return
             okat = Orders.query.filter(Orders.Container==thiscon).first()
             driver = get_driver(movetyp, con)
@@ -257,6 +282,7 @@ def update_records(thiscon, id):
                 ikat.Jo = okat.Jo
                 ikat.Company = okat.Shipper
                 ikat.Driver = driver
+                ikat.Release = release
                 okat.Chassis = ikat.Chassis
                 okat.Date2 = ikat.Date
                 okat.BOL = ikat.Release
@@ -305,6 +331,24 @@ def moveticks(gfile1,outfile):
     with open(outfile, "wb") as out_f:
         output.write(out_f)
 
+def getdriver(printif, dayback):
+    cutoff = datetime.now() - timedelta(30)
+    cutoff = cutoff.date()
+    idata = Interchange.query.filter((Interchange.Driver == 'NAY')  & (Interchange.Date > cutoff)).all()
+    for idat in idata:
+        con = idat.Container
+        type = idat.Type
+        book = idat.Release
+        if type == 'Load In': pdat = Pins.query.filter((Pins.InCon == con) & (Pins.Date > cutoff)).first()
+        if type == 'Load Out': pdat = Pins.query.filter((Pins.OutCon == con) & (Pins.Date > cutoff)).first()
+        if type == 'Empty Out': pdat = Pins.query.filter((Pins.OutBook == book) & (Pins.Date > cutoff)).first()
+        if type == 'Empty In': pdat = Pins.query.filter((Pins.InCon == con) & (Pins.Date > cutoff)).first()
+        if pdat is not None:
+            driver = pdat.Driver
+            idat.Driver = driver
+        db.session.commit()
+
+
 def gatescraper(printif, dayback):
 
     newadd = 0
@@ -335,227 +379,254 @@ def gatescraper(printif, dayback):
     with Display():
     #display = Display(visible=0, size=(800, 1080))
     #display.start()
+    #if 1==1:
         #opts = FirefoxOptions()
         #opts.add_argument('--headless')
         logontrys = 1
         logonyes = 0
         url1 = websites['gate']
-        browser = webdriver.Firefox()
 
-        while logontrys<4 and logonyes == 0:
+        with webdriver.Firefox() as browser:
 
-            browser.get(url1)
-            print('Got url1') if printif == 1 else 1
-            time.sleep(4)
-            print('Done Sleeping') if printif == 1 else 1
-            print('Getting xpath') if printif == 1 else 1
-            selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
-            print('Got xpath for Username') if printif == 1 else 1
-            selectElem.clear()
-            selectElem.send_keys(username)
+            while logontrys<4 and logonyes == 0:
 
-            selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
-            print('Got xpath for Password') if printif == 1 else 1
-            selectElem.clear()
-            selectElem.send_keys(password)
-            time.sleep(1)
-            selectElem.submit()
-            time.sleep(4)
-            newurl = browser.current_url
-            print('newurl=', newurl, flush=True) if printif == 1 else 1
-            if 'logon' not in newurl:
-                logonyes = 1
-            else:
-                print(f'Log on failed on try {logontrys}')
-            logontrys += 1
-
-        if logonyes:
-            newurl = newurl+'#/Report/GateActivity'
-            browser.get(newurl)
-            time.sleep(4)
-            print('newurl=', newurl, flush=True)
-
-            try:
-                selectElem = browser.find_element_by_xpath('//*[@id="StartDate"]')
+                browser.get(url1)
+                print('Got url1') if printif == 1 else 1
+                time.sleep(4)
+                print('Done Sleeping') if printif == 1 else 1
+                print('Getting xpath') if printif == 1 else 1
+                selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
+                print('Got xpath for Username') if printif == 1 else 1
                 selectElem.clear()
-                selectElem.send_keys(startdate)
-            except:
-                print('Could not find StartDate Box')
-                errors +=1
-                addtext = addtext + f'<br>Failed to find StartDate Box for {startdate}'
-                addtext = addtext + f'<br>at url: {newurl}'
-                return addtext, newadd, newinterchange, errors
+                selectElem.send_keys(username)
 
-            try:
-                selectElem = browser.find_element_by_xpath('//*[@id="EndDate"]')
+                selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
+                print('Got xpath for Password') if printif == 1 else 1
                 selectElem.clear()
-                selectElem.send_keys(enddate)
+                selectElem.send_keys(password)
                 time.sleep(1)
                 selectElem.submit()
-                time.sleep(7)
-            except:
-                print('Could not find Enddate Box')
-                errors +=1
-                addtext = addtext + f'<br>Failed to find EndDate Box for {enddate}'
-                addtext = addtext + f'<br>at url: {newurl}'
-                return addtext, newadd, newinterchange, errors
-
-            try:
-                contentstr = f'//*[@id="completed"]/div/div[1]'
-                selectElem = browser.find_element_by_xpath(contentstr)
-                con = selectElem.text
-                res = [int(i) for i in con.split() if i.isdigit()]
-            except:
-                res = [0]
-                print('No gate transactions reported')
-                #errors += 1
-                addtext = addtext + f'<br>No Gate Transactions Reported'
-                return addtext, newadd, newinterchange, errors
-
-            try:
-                if len(res) > 0:
-                    numrec = int(res[0])
-                    print('Number of Elements in Table = ', numrec)
+                time.sleep(4)
+                newurl = browser.current_url
+                print('newurl=', newurl, flush=True) if printif == 1 else 1
+                if 'logon' not in newurl:
+                    logonyes = 1
                 else:
-                    numrec = 0
+                    print(f'Log on failed on try {logontrys}')
+                logontrys += 1
+
+            if logonyes:
+                newurl = newurl+'#/Report/GateActivity'
+                browser.get(newurl)
+                time.sleep(4)
+                print('newurl=', newurl, flush=True)
+
+                try:
+                    selectElem = browser.find_element_by_xpath('//*[@id="StartDate"]')
+                    selectElem.clear()
+                    selectElem.send_keys(startdate)
+                except:
+                    print('Could not find StartDate Box')
+                    errors +=1
+                    addtext = addtext + f'<br>Failed to find StartDate Box for {startdate}'
+                    addtext = addtext + f'<br>at url: {newurl}'
+                    return addtext, newadd, newinterchange, errors
+
+                try:
+                    selectElem = browser.find_element_by_xpath('//*[@id="EndDate"]')
+                    selectElem.clear()
+                    selectElem.send_keys(enddate)
+                    time.sleep(1)
+                    selectElem.submit()
+                    time.sleep(7)
+                except:
+                    print('Could not find Enddate Box')
+                    errors +=1
+                    addtext = addtext + f'<br>Failed to find EndDate Box for {enddate}'
+                    addtext = addtext + f'<br>at url: {newurl}'
+                    return addtext, newadd, newinterchange, errors
+
+                try:
+                    contentstr = f'//*[@id="completed"]/div/div[1]'
+                    selectElem = browser.find_element_by_xpath(contentstr)
+                    con = selectElem.text
+                    res = [int(i) for i in con.split() if i.isdigit()]
+                except:
+                    res = [0]
                     print('No gate transactions reported')
+                    #errors += 1
                     addtext = addtext + f'<br>No Gate Transactions Reported'
                     return addtext, newadd, newinterchange, errors
 
-            except:
-                errors += 1
-                addtext = addtext + f'<br>Failed to read table that has values'
-                return addtext, newadd, newinterchange, errors
-
-
-            if 1==1:
-                #containers = browser.find_elements_by_xpath('//a[contains(@href,"ticket")]')
-                conrecords = []
-                for i in range(1,numrec+1):
-                    cr = []
-                    for j in range(1,12):
-                        contentstr = f'//*[@id="completed"]/div/div[3]/table/tbody/tr[{i}]/td[{j}]'
-                        selectElem = browser.find_element_by_xpath(contentstr)
-                        con = selectElem.text
-                        if j==1:
-                            movetyp = selectElem.text.strip()
-                            movetyp = movetyp.replace('Full','Load')
-                            movetyp = movetyp.replace('Export Dray-Off','Load Out')
-                            con = movetyp
-                        cr.append(con)
-                        if j==3:
-                            nc = browser.find_element_by_xpath(f'//*[@id="completed"]/div/div[3]/table/tbody/tr[{i}]/td[{j}]/a')
-                            clink = nc.get_attribute('href')
-                            cr.append(clink)
-                            thiscon = selectElem.text.strip()
-
-                    if hasinput(thiscon) and hasinput(movetyp):
-                        print(cr) if printif == 1 else 1
-                        dpt = cr[1].split()
-                        print('dpt=', dpt) if printif == 1 else 1
-                        mydate = datetime.strptime(dpt[0], '%m/%d/%Y')
-                        mydate = mydate.date()
-                        mytime = f'{dpt[1]} {dpt[2]}'
-                        mytimedt = datetime.strptime(mytime, '%I:%M %p')
-                        mytime = mytimedt.strftime('%H:%M')
-                        print('mytime =', mytime) if printif == 1 else 1
-                        print('cutoff =',cutoff) if printif == 1 else 1
-                        idat = Interchange.query.filter( (Interchange.Container == thiscon) & (Interchange.Type == movetyp) & (Interchange.Date > cutoff) ).first()
-                        if idat is None:
-
-                            contype = f'{cr[4]} {cr[5]} {cr[6]}'
-
-                            input = Interchange(Container=thiscon, TruckNumber='NAY', Driver='NAY', Chassis=cr[8],
-                                                Date=mydate, Release=cr[11], GrossWt='NAY', Seals='NAY', ConType=contype, CargoWt='NAY',
-                                                Time=mytime, Status='AAAAAA', Source='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None)
-
-                            db.session.add(input)
-                            db.session.commit()
-                            newadd = 1
-                            print(f'***Adding {thiscon} {movetyp} on {mydate} at {mytime} to database')
-                            addtext = addtext + f'<br>***Adding {thiscon} {movetyp} on {mydate} at {mytime} to database'
-                            conrecords.append(cr)
-                        else:
-                            print(f'Record for {thiscon} {movetyp} on {mydate} at {mytime} already in database')
-                            addtext = addtext + f'<br>Record for {thiscon} {movetyp} on {mydate} at {mytime} already in database'
+                try:
+                    if len(res) > 0:
+                        numrec = int(res[0])
+                        print('Number of Elements in Table = ', numrec)
                     else:
-                        print(f'Could not get the container or movetyp value for this record {i} of {numrec+1}')
+                        numrec = 0
+                        print('No gate transactions reported')
+                        addtext = addtext + f'<br>No Gate Transactions Reported'
+                        return addtext, newadd, newinterchange, errors
 
-                #These are the records that will be put in database
-                for rec in conrecords:
+                except:
+                    errors += 1
+                    addtext = addtext + f'<br>Failed to read table that has values'
+                    return addtext, newadd, newinterchange, errors
 
-                    thiscon = rec[2]
-                    movetyp = rec[0]
-                    clink = rec[3]
-                    browser.get(clink)
-                    time.sleep(2)
-                    conset = {}
-                    con_data = browser.page_source
-                    con_data = con_data.replace('</head>', '<style> table.center { margin-left: auto; margin-right: auto;}</style></head>')
-                    con_data = con_data.replace('<table style="border: 1pt',
-                                                '<table class="center" style="border: 1pt')
-                    testdata = con_data.splitlines()
-                    #page_soup = soup(con_data, 'html.parser')
-                    keys = ['TRUCK NUMBER:', 'CHASSIS:', 'GROSS WT:', 'CARGO WT:', 'SEALS:', 'CONTAINER:', 'SIZE/TYPE:']
-                    labels = ['TruckNumber', 'Chassis', 'GrossWt', 'CargoWt', 'Seals', 'Container', 'Size']
 
-                    for line in testdata:
-                        for jx,key in enumerate(keys):
-                            if key in line:
-                                #print(f'key found {key} in line: {line}')
-                                res = line.split(key,1)
-                                value = res[1]
-                                value = value.replace('</td>','')
-                                value = value.strip()
-                                #print(value)
-                                newkey = labels[jx]
-                                conset.update({newkey: value})
+                if 1==1:
+                    #try to change the number per page to 30
+                    #contentstr = f'//*[@id="completed"]/div/div[4]/div/ul[1]/li/select'
+                    #selectElem = browser.find_element_by_xpath(contentstr)
+                    #time.sleep(1)
+                    #selectElem.select_by_index(3)
+                    #time.sleep(1)
+                    #changed default number per page to 30 from 20...test and worked
 
-                    idat = Interchange.query.filter((Interchange.Container == thiscon) & (Interchange.Type == movetyp) & (Interchange.Date > cutoff)).first()
+                    conrecords = []
+                    for i in range(numrec, 0, -1):
+                        cr = []
+                        for j in range(1,12):
+                            contentstr = f'//*[@id="completed"]/div/div[3]/table/tbody/tr[{i}]/td[{j}]'
+                            selectElem = browser.find_element_by_xpath(contentstr)
+                            con = selectElem.text
+                            if j==1:
+                                movetyp = selectElem.text.strip()
+                                movetyp = movetyp.replace('Full','Load')
+                                movetyp = movetyp.replace('Export Dray-Off','Load Out')
+                                con = movetyp
+                            cr.append(con)
+                            if j==3:
+                                nc = browser.find_element_by_xpath(f'//*[@id="completed"]/div/div[3]/table/tbody/tr[{i}]/td[{j}]/a')
+                                clink = nc.get_attribute('href')
+                                cr.append(clink)
+                                thiscon = selectElem.text.strip()
 
-                    if idat is not None:
+                        if hasinput(thiscon) and hasinput(movetyp):
+                            print(cr) if printif == 1 else 1
+                            dpt = cr[1].split()
+                            print('dpt=', dpt) if printif == 1 else 1
+                            mydate = datetime.strptime(dpt[0], '%m/%d/%Y')
+                            mydate = mydate.date()
+                            mytime = f'{dpt[1]} {dpt[2]}'
+                            mytimedt = datetime.strptime(mytime, '%I:%M %p')
+                            mytime = mytimedt.strftime('%H:%M')
+                            print('mytime =', mytime) if printif == 1 else 1
+                            print('cutoff =',cutoff) if printif == 1 else 1
+                            idat = Interchange.query.filter( (Interchange.Container == thiscon) & (Interchange.Type == movetyp) & (Interchange.Date > cutoff) ).first()
+                            if idat is None:
 
-                        type = movetyp.upper()
-                        type = type.replace(' ', '_')
-                        viewfile = thiscon + '_' + type + '.pdf'
+                                contype = f'{cr[4]} {cr[5]} {cr[6]}'
 
-                        idat.Chassis = conset.get("Chassis")
-                        idat.TruckNumber = conset.get("TruckNumber")
-                        idat.GrossWt = conset.get("GrossWt")
-                        idat.CargoWt = conset.get("CargoWt")
-                        idat.Seals = conset.get("Seals")
-                        idat.Source = viewfile
+                                input = Interchange(Container=thiscon, TruckNumber='NAY', Driver='NAY', Chassis=cr[8],
+                                                    Date=mydate, Release=cr[11], GrossWt='NAY', Seals='NAY', ConType=contype, CargoWt='NAY',
+                                                    Time=mytime, Status='AAAAAA', Source='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None)
 
-                        newinterchange.append(idat.id)
+                                db.session.add(input)
+                                db.session.commit()
+                                newadd = 1
+                                print(f'***Adding {thiscon} {movetyp} on {mydate} at {mytime} to database')
+                                addtext = addtext + f'<br>***Adding {thiscon} {movetyp} on {mydate} at {mytime} to database'
+                                conrecords.append(cr)
+                            else:
+                                source = idat.Source
+                                if source == 'NAY':
+                                    #Elements are missing we need to try again to update the records
+                                    print (f'******Elements missing for {thiscon} {movetyp} on {mydate} at {mytime} will update the database')
+                                    addtext = addtext + f'******Elements missing for {thiscon} {movetyp} on {mydate} at {mytime} will update the database'
+                                    conrecords.append(cr)
+                                else:
+                                    print(f'Record for {thiscon} {movetyp} on {mydate} at {mytime} already in database')
+                                    addtext = addtext + f'<br>Record for {thiscon} {movetyp} on {mydate} at {mytime} already in database'
 
-                        db.session.commit()
+                        else:
+                            print(f'Could not get the container or movetyp value for this record {i} of {numrec+1}')
 
-                        #print(f'con_data:{con_data}')
-                        print(f'outpath is: {outpath}')
-                        print(f'viewfile is {viewfile}')
-                        pfile = outpath+viewfile
-                        print(f'pfile is {pfile}')
-                        pdfkit.from_string(con_data, pfile)
-                        newfile = outpath + viewfile
+                    #These are the records that will be put in database
+                    for rec in conrecords:
 
-                        #newfile = moveticks(newfile)
-                        copyline = f'scp {newfile} {websites["ssh_data"]+"vGate"}'
-                        print('copyline=',copyline)
-                        os.system(copyline)
-                        #os.remove(newfile)
-                        print('Now updating records')
-                        retval = update_records(thiscon, idat.id)
-                        print(f'The return value is {retval}')
-            if 1 == 2:
-                addtext = addtext + f'\n\nFailure with something in container match system'
-                errors += 1
-                print('Experienced an error in the container records area')
-                return addtext, newadd, newinterchange, errors
+                        thiscon = rec[2]
+                        movetyp = rec[0]
+                        clink = rec[3]
+                        browser.get(clink)
+                        time.sleep(2)
 
-        else:
-            print(f'Logon failed with trys = {logontrys}')
-            addtext = addtext + f'Logon failed with trys = {logontrys}'
-        browser.quit()
+                        conset = {}
+                        con_data = browser.page_source
+                        con_data = con_data.replace('</head>', '<style> table.center { margin-left: auto; margin-right: auto;}</style></head>')
+                        con_data = con_data.replace('<table style="border: 1pt',
+                                                    '<table class="center" style="border: 1pt')
+                        testdata = con_data.splitlines()
+                        #page_soup = soup(con_data, 'html.parser')
+                        keys = ['TRUCK NUMBER:', 'CHASSIS:', 'GROSS WT:', 'CARGO WT:', 'SEALS:', 'CONTAINER:', 'SIZE/TYPE:']
+                        labels = ['TruckNumber', 'Chassis', 'GrossWt', 'CargoWt', 'Seals', 'Container', 'Size']
+
+                        for line in testdata:
+                            for jx,key in enumerate(keys):
+                                if key in line:
+                                    #print(f'key found {key} in line: {line}')
+                                    res = line.split(key,1)
+                                    value = res[1]
+                                    value = value.replace('</td>','')
+                                    value = value.strip()
+                                    #print(value)
+                                    newkey = labels[jx]
+                                    conset.update({newkey: value})
+
+                        idat = Interchange.query.filter((Interchange.Container == thiscon) & (Interchange.Type == movetyp) & (Interchange.Date > cutoff)).first()
+
+                        if idat is not None:
+
+                            type = movetyp.upper()
+                            type = type.replace(' ', '_')
+                            viewfile = thiscon + '_' + type + '.pdf'
+
+                            idat.Chassis = conset.get("Chassis")
+                            idat.TruckNumber = conset.get("TruckNumber")
+                            idat.GrossWt = conset.get("GrossWt")
+                            idat.CargoWt = conset.get("CargoWt")
+                            idat.Seals = conset.get("Seals")
+                            idat.Source = viewfile
+
+                            newinterchange.append(idat.id)
+
+                            db.session.commit()
+
+                            print('Now updating records')
+                            retval = update_records(thiscon, idat.id)
+                            print(f'The return value is {retval}')
+
+                            #print(f'con_data:{con_data}')
+                            print(f'outpath is: {outpath}')
+                            print(f'viewfile is {viewfile}')
+                            pfile = outpath+viewfile
+                            print(f'pfile is {pfile}')
+                            pdfkit.from_string(con_data, pfile)
+                            newfile = outpath + viewfile
+
+                            #newfile = moveticks(newfile)
+                            copyline = f'scp {newfile} {websites["ssh_data"]+"vGate"}'
+                            print('copyline=',copyline)
+                            os.system(copyline)
+                            #os.remove(newfile)
+
+
+                        else:
+                            print(f'Error  ****Could not find an interchange for container {thiscon} with move type {movetyp}')
+                            addtext = addtext + f'Error  ****Could not find an interchange for container {thiscon} with move type {movetyp} and records not updated'
+
+                if 1 == 2:
+                    addtext = addtext + f'\n\nFailure with something in container match system'
+                    errors += 1
+                    print('Experienced an error in the container records area')
+                    return addtext, newadd, newinterchange, errors
+
+            else:
+                print(f'Logon failed with trys = {logontrys}')
+                addtext = addtext + f'Logon failed with trys = {logontrys}'
+
+            browser.quit()
+
     return addtext, newadd, newinterchange, errors
 
 
@@ -589,7 +660,7 @@ for ix in daybackvec:
     print('Running this far back:',ix)
     textblock = f'{textblock} <br> Running this far back: {ix}'
     addtext, newadd, newinterchange, errors = gatescraper(printif, ix)
-    try:
+    if 1 == 1:
         #if newadd: addtext = conmatch(addtext, newinterchange)
         textblock = f'{textblock} <br><br> {addtext}\n'
         if newadd:
@@ -600,10 +671,13 @@ for ix in daybackvec:
             textblock = textblock + '<br> No new add and no errors'
             #emailtxt(title, textblock)
 
-    except:
+    if 1 == 2:
         textblock = f'{textblock} <br><br> {addtext}\n'
         finat = datetime.now()
         title = f'{scac} Cron run for Gate Now at {runat} failed at {finat}'
         emailtxt(title, f'Failed in conmatch on day back {ix}<br><br>Textblock:{textblock}')
+
+    # Update the driver from the pin database set
+    #getdriver(printif,ix)
 
 if nt == 'remote': tunnel.stop()
