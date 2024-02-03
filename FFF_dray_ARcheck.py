@@ -3,8 +3,6 @@ import sys
 import socket
 from utils import getpaths
 
-
-
 import openpyxl
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Font, Color
 from openpyxl.utils import get_column_letter
@@ -16,7 +14,12 @@ from datetime import timedelta
 today = datetime.datetime.today()
 today_str = today.strftime("%m/%d/%Y")
 d = today.strftime("%B %d, %Y")
-cutoff = datetime.datetime.now() - timedelta(365)
+#Calc days back desered to go back to last date of year two years prior
+tyear = today.year - 1
+last_day_back = datetime.date(tyear, 1, 1)
+daysback = today.date() - last_day_back
+days_far_back = daysback.days
+cutoff = datetime.datetime.now() - timedelta(days_far_back)
 cutoff = cutoff.date()
 over30 = datetime.datetime.now() - timedelta(30)
 over30 = over30.date()
@@ -50,7 +53,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
 
     from remote_db_connect import db
     if nt == 'remote': from remote_db_connect import tunnel
-    from models8 import Orders, Interchange, Invoices, Openi
+    from models8 import Orders, Interchange, Invoices
 
 else:
     scac = 'nogo'
@@ -101,7 +104,7 @@ if scac != 'nogo':
     trys = 0
     while success == 0 and trys < 20:
         try:
-            odata = Orders.query.filter((Orders.Istat>0) & ((Orders.Istat<4) | (Orders.Istat == 7) | (Orders.Istat == 6)) & (Orders.Date > cutoff)).all()
+            odata = Orders.query.filter((Orders.Istat>0) & (Orders.InvoDate > cutoff)).all()
             success = 1
         except:
             print(f'Could not open tunnel on try {trys}')
@@ -115,7 +118,6 @@ if scac != 'nogo':
             if comp not in comps: comps.append(comp)
 
         for gdat in odata:
-            print(gdat.id, gdat.Jo, gdat.Date)
             jo = gdat.Jo
             links = gdat.Links
             odr = gdat.Order
@@ -191,8 +193,6 @@ if scac != 'nogo':
         s_hdrs = ['Company', 'Over 30 Days', 'Under 30 Days', 'Total Unpaid Invoices']
         desc = f'Report last updated on {todaydate}'
         #Kill all then entries and add them each in
-        Openi.query.delete()
-        db.session.commit()
 
         for col, hdr in enumerate(s_hdrs):
             d = dfs.cell(row=1, column=col + 2, value=hdr)
@@ -254,13 +254,7 @@ if scac != 'nogo':
             comp, so, su, stot = zdat
             compu = comp.upper()
 
-
             row_s += 1
-
-            #Place information in database table also in addition to writing excel sheet.
-
-            input = Openi(Company=compu, Over30=int(so*100), Under30=int(su*100), Total=int(stot*100), Description=desc)
-            db.session.add(input)
 
             d = dfs.cell(row=row_s, column=2, value=comp)
             d.alignment = Alignment(horizontal='left')
@@ -300,11 +294,6 @@ if scac != 'nogo':
         d.alignment = Alignment(horizontal='center')
         d.font = Font(name='Calibri', size=10, bold=True)
         d.number_format = money
-
-        input = Openi(Company='TOTALS', Over30=int(sumover_all * 100), Under30=int(sumunder_all * 100), Total=int((sumunder_all+sumover_all) * 100),
-                          Description=desc)
-        db.session.add(input)
-        db.session.commit()
 
         column_widths = column_wide(s_hdrs, zdata)
         for i, column_width in enumerate(column_widths):

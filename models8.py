@@ -546,6 +546,42 @@ class Orders(db.Model):
         self.Payments = Payments
         self.Quote = Quote
 
+class Ardata(db.Model):
+    __tablename__ = 'ardata'
+    id = db.Column('id', db.Integer, primary_key=True)
+    Etitle = db.Column('Etitle', db.String(100))
+    Ebody = db.Column('Ebody', db.String(2000))
+    Emailto = db.Column('Emailto', db.String(200))
+    Emailcc = db.Column('Emailcc', db.String(200))
+    Sendfiles = db.Column('Sendfiles', db.String(200))
+    Sendasfiles = db.Column('Sendasfiles', db.String(200))
+    Jolist= db.Column('Jolist', db.String(200))
+    Emailtype = db.Column('Emailtype', db.String(45))
+    Mid = db.Column('Mid', db.String(100))
+    Customer = db.Column('Customer', db.String(45))
+    Container = db.Column('Container', db.String(45))
+    Date1 = db.Column('Date1', db.DateTime)
+    Datelist = db.Column('Datelist', db.String(200))
+    From = db.Column('From', db.String(45))
+    Box = db.Column('Box', db.String(45))
+
+    def __init__(self, Etitle, Ebody, Emailto, Emailcc, Sendfiles, Sendasfiles, Jolist, Emailtype, Mid, Customer, Container, Date1, Datelist, From, Box):
+        self.Etitle = Etitle
+        self.Ebody = Ebody
+        self.Emailto = Emailto
+        self.Emailcc = Emailcc
+        self.Sendfiles = Sendfiles
+        self.Sendasfiles = Sendasfiles
+        self.Jolist = Jolist
+        self.Emailtype = Emailtype
+        self.Mid = Mid
+        self.Customer = Customer
+        self.Container = Container
+        self.Date1 = Date1
+        self.Datelist = Datelist
+        self.From = From
+        self.Box = Box
+
 
 class Drops(db.Model):
     __tablename__ = 'drops'
@@ -1184,33 +1220,53 @@ class SumInv(db.Model):
 class Income(db.Model):
     __tablename__ = 'income'
     id = db.Column('id', db.Integer, primary_key=True)
-    Month = db.Column('Month', db.String(99))
+    Period = db.Column('Period', db.String(45))
     Mrev = db.Column('Mrev', db.Integer)
-    Crev = db.Column('Crev', db.Integer)
-    Revcoll = db.Column('Revcoll', db.Integer)
+    Mpaid = db.Column('Mpaid', db.Integer)
+    O120 = db.Column('O120', db.Integer)
+    O90 = db.Column('O90', db.Integer)
+    O60 = db.Column('O60', db.Integer)
+    O30 = db.Column('O30', db.Integer)
+    U30 = db.Column('U30', db.Integer)
     Open = db.Column('Open', db.Integer)
     Description = db.Column('Description', db.String(100))
-    def __init__(self, Month, Mrev, Crev, Revcoll, Open, Description):
-        self.Month = Month
+    Type = db.Column('Type', db.String(5))
+    def __init__(self, Period, Mrev, Mpaid, O120, O90, O60, O30, U30, Open, Description, Type):
+        self.Period = Period
         self.Mrev = Mrev
-        self.Crev = Crev
-        self.Revcoll = Revcoll
+        self.Mpaid = Mpaid
+        self.O120 = O120
+        self.O90 = O90
+        self.O60 = O60
+        self.O30 = O30
+        self.U30 = U30
         self.Open = Open
         self.Description = Description
+        self.Type = Type
 
 class Openi(db.Model):
     __tablename__ = 'openi'
     id = db.Column('id', db.Integer, primary_key=True)
     Company = db.Column('Company', db.String(99))
-    Over30 = db.Column('Over30', db.Integer)
-    Under30 = db.Column('Under30', db.Integer)
-    Total = db.Column('Total', db.Integer)
+    Mrev = db.Column('Mrev', db.Integer)
+    Mpaid = db.Column('Mpaid', db.Integer)
+    O120 = db.Column('O120', db.Integer)
+    O90 = db.Column('O90', db.Integer)
+    O60 = db.Column('O60', db.Integer)
+    O30 = db.Column('O30', db.Integer)
+    U30 = db.Column('U30', db.Integer)
+    Open = db.Column('Open', db.Integer)
     Description = db.Column('Description', db.String(100))
-    def __init__(self, Company, Over30, Under30, Total, Description):
+    def __init__(self, Company, Mrev, Mpaid, O120, O90, O60, O30, U30, Open, Description):
         self.Company = Company
-        self.Over30 = Over30
-        self.Under30 = Under30
-        self.Total = Total
+        self.Mrev = Mrev
+        self.Mpaid = Mpaid
+        self.O120 = O120
+        self.O90 = O90
+        self.O60 = O60
+        self.O30 = O30
+        self.U30 = U30
+        self.Open = Open
         self.Description = Description
 
 class Deposits(db.Model):
