@@ -19,7 +19,7 @@ tyear = today.year - 1
 last_day_back = datetime.date(tyear, 1, 1)
 daysback = today.date() - last_day_back
 days_far_back = daysback.days
-cutoff = datetime.datetime.now() - timedelta(days_far_back)
+cutoff = datetime.datetime.now() - timedelta(365)
 cutoff = cutoff.date()
 over30 = datetime.datetime.now() - timedelta(30)
 over30 = over30.date()
@@ -104,65 +104,56 @@ if scac != 'nogo':
     trys = 0
     while success == 0 and trys < 20:
         try:
-            odata = Orders.query.filter((Orders.Istat>0) & (Orders.InvoDate > cutoff)).all()
+            odata = Orders.query.filter((Orders.Istat > 0) & (Orders.Istat < 5) & (Orders.Date3 > cutoff)).all()
             success = 1
         except:
             print(f'Could not open tunnel on try {trys}')
             trys = trys + 1
 
     if success == 1:
-        #Make a list of each unique company with open invoices
+        #Make a list of each unique company with invoices in the past year:
         comps = []
         for odat in odata:
             comp = odat.Shipper
             if comp not in comps: comps.append(comp)
+        print(f'Completed getting unique companies with invoices in past year')
+
+        def defset(str):
+            if hasinput(str): return str
+            else: return ''
 
         for gdat in odata:
             jo = gdat.Jo
-            links = gdat.Links
-            odr = gdat.Order
-            if links is None: links = ''
-            invo = gdat.Invoice
-            if invo is None: invo = ''
-
-            obk = gdat.Booking
-            obol = gdat.BOL
-            if hasinput(obol):
-                ietyp = 'imp'
-            else:
-                ietyp = 'exp'
-
-
-            int_data = Interchange.query.filter(Interchange.Jo == jo).all()
-            if len(int_data) >= 1:
-                bk1 = int_data[0].Release
-                con = int_data[0].Container
-                dt1 = int_data[0].Date
-            else:
-                bk1 = 'None'
-                dt1 = None
-            if len(int_data) >= 2:
-                bk2 = int_data[1].Release
-                dt2 = int_data[1].Date
-            else:
-                bk2 = 'None'
-                dt2 = None
-
-            if ietyp == 'imp': bk1 = obol
-
-            if bk1 == 'DP OP' or bk2 == 'DP OP':
-                print(f'This booking {bk1} and {bk2} has DP OP')
-            else:
+            odr = defset(gdat.Order)
+            bk1 = defset(gdat.Booking)
+            bk2 = defset(gdat.BOL)
+            con = defset(gdat.Container)
+            dt1 = gdat.Date
+            dt2 = gdat.Date2
+            invo = defset(gdat.Invoice)
+            links = defset(gdat.Links)
+            if dt1 is not None and dt2 is not None:
                 idat = Invoices.query.filter(Invoices.Jo == jo).first()
                 if idat is not None:
                     dti = idat.Date
                     amt = float(idat.Total)
+
+                    #Make sure the invototal matches the invoice:
+                    invocheck = defset(gdat.InvoTotal)
+                    test = d2s(amt)
+                    if test != invocheck:
+                        print(f'Fixing Orders InvoTotal to match the Invoice Total for jo {jo}')
+                        gdat.InvoTotal = test
+                        db.session.commit()
+
                     newblock = [gdat.id, gdat.Jo, gdat.Shipper, odr, bk1, bk2, con, dt1, dt2, dti, amt, invo, links]
                     ydata.append(newblock)
                 else:
                     dti = 'None'
                     amt = 'No Invoice'
                     print(f'No invoice found for {gdat.id} with JO: {jo}')
+            else:
+                print(f'Do not have both and out and in date for {gdat.id} with JO: {jo}....need to fix')
 
         ydata.sort(key=lambda row: (row[9], row[12]))
 
