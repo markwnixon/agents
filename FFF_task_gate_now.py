@@ -171,11 +171,13 @@ def make_blended(odat,ingate,outgate):
             os.remove(tempfile2)
             os.remove(tempfile)
         elif os.path.isfile(tempfile1) and os.path.isfile(tempfile2):
+            print(f'Have the temp files needed to make blended and will place in database if successful')
             # g1 = f'static/{scac}/data/vGate/{pdf1}'
             # g2 = f'static/{scac}/data/vGate/{pdf2}'
             blendticks(tempfile1, tempfile2, tempfile)
             odat.Gate = f'{con}_Blended.pdf'
             db.session.commit()
+            time.sleep(3) #make sure the file has time to be created
             if os.path.isfile(tempfile):
                 copyline = f'scp {tempfile} {websites["ssh_data"] + "vGate"}'
                 print('copyline=', copyline)
@@ -183,6 +185,11 @@ def make_blended(odat,ingate,outgate):
                 os.remove(tempfile1)
                 os.remove(tempfile2)
                 os.remove(tempfile)
+            else:
+                print('The blended file was not created successfully')
+        else:
+            if not os.path.isfile(tempfile1): print(f'Do not have file {tempfile1}')
+            if not os.path.isfile(tempfile2): print(f'Do not have file {tempfile2}')
 
 
 def update_records(thiscon, id):

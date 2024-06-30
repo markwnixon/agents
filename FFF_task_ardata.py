@@ -54,9 +54,12 @@ if nt == 'remote':
     success = tunneltest()
 
 if scac == 'OSLM':
-    username_list = [usernames['invo'], usernames['serv'], usernames['invo']]
-    password_list = [passwords['invo'], passwords['serv'], passwords['invo']]
-    boxlist = ['SENT', 'SENT', 'INBOX']
+    #username_list = [usernames['invo'], usernames['serv'], usernames['info']]
+    #password_list = [passwords['invo'], passwords['serv'], passwords['info']]
+    #boxlist = ['SENT', 'SENT', 'INBOX']
+    username_list = [usernames['info']]
+    password_list = [passwords['info']]
+    boxlist = ['INBOX']
     skiplist = []
 elif scac == 'FELA':
     username_list = [usernames['mnix'], usernames['info']]
@@ -221,6 +224,7 @@ def html_to_plain_text(html_content):
 
 def get_invoice_emails(container, summary, box):
     if summary is not None:
+        print(f'Looking for summary {summary}')
         status, messages = imap.search(None, '(SUBJECT "{}")'.format(summary))
     else:
         status, messages = imap.search(None, '(SUBJECT "{}")'.format(container))
@@ -327,7 +331,7 @@ for ix, username in enumerate(username_list):
 
     # Get all orders from the last 30 days:
     dat90 = today - timedelta(360)
-    odata = Orders.query.filter((Orders.Istat>2) & (Orders.Istat<5) & (Orders.Date3>dat90)).order_by(Orders.Date3).all()
+    odata = Orders.query.filter( ((Orders.Istat>2) & ( (Orders.Istat<5) | (Orders.Istat==7))) & (Orders.Date3>dat90)).order_by(Orders.Date3).all()
     customer_set = []
     for odat in odata:
         #Find emails by subject and add to ardata database

@@ -78,7 +78,7 @@ scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
 
-    print(f'Running FFF_dray_ARcheck for {scac}')
+    print(f'Running FFF_dray_ARhistory for {scac}')
     host_name = socket.gethostname()
     print("Host Name:", host_name)
     dropbox_path = getpaths(host_name, 'dropbox')
@@ -184,6 +184,7 @@ if scac != 'nogo':
             amtpaid = 0.00
             jo = gdat.Jo
             istat = gdat.Istat
+            con = gdat.Container
             if istat == 5 or istat == 8:
                 paid = 1
             else:

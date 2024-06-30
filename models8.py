@@ -470,13 +470,24 @@ class Orders(db.Model):
     BalDue = db.Column('BalDue', db.String(45))
     Payments = db.Column('Payments', db.String(45))
     Quote = db.Column('Quote', db.String(45))
+    RateCon = db.Column('RateCon', db.String(100))
+    Rcache = db.Column('Rcache', db.Integer)
+    Proof2 = db.Column('Proof2', db.String(100))
+    Pcache2 = db.Column('Pcache2', db.Integer)
+    Emailjp = db.Column('Emailjp', db.String(45))
+    Emailoa = db.Column('Emailoa', db.String(45))
+    Emailap = db.Column('Emailap', db.String(45))
+    Saljp = db.Column('Saljp', db.String(45))
+    Saloa = db.Column('Saloa', db.String(45))
+    Salap = db.Column('Salap', db.String(45))
 
     def __init__(self, Status, Jo, HaulType, Order, Company, Location, BOL, Booking, Container, Driver, Pickup,
                  Delivery, Amount, Date, Time, Date2, Time2, Time3, PaidInvoice, Source, Description, Chassis,
                  Detention, Storage, Release, Company2, Seal, Shipper, Type, Bid, Lid, Did, Label, Dropblock1,
                  Dropblock2, Commodity, Packing, Links, Hstat, Istat, Proof, Invoice, Gate, Package, Manifest,
                  Scache, Pcache, Icache, Mcache, Pkcache, QBi, InvoTotal, Truck, Dropblock3, Location3, Date3,
-                 Date4, Date5, Date6, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments, Quote):
+                 Date4, Date5, Date6, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments,
+                 Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap):
         self.Status = Status
         self.Jo = Jo
         self.HaulType = HaulType
@@ -545,21 +556,31 @@ class Orders(db.Model):
         self.BalDue = BalDue
         self.Payments = Payments
         self.Quote = Quote
+        self.RateCon = RateCon
+        self.Rcache = Rcache
+        self.Proof2 = Proof2
+        self.Pcache2 = Pcache2
+        self.Emailjp = Emailjp
+        self.Saljp = Saljp
+        self.Emailoa = Emailoa
+        self.Saloa = Saloa
+        self.Emailap = Emailap
+        self.Salap = Salap
 
 class Ardata(db.Model):
     __tablename__ = 'ardata'
     id = db.Column('id', db.Integer, primary_key=True)
     Etitle = db.Column('Etitle', db.String(100))
-    Ebody = db.Column('Ebody', db.String(2000))
+    Ebody = db.Column('Ebody', db.String(6000))
     Emailto = db.Column('Emailto', db.String(200))
     Emailcc = db.Column('Emailcc', db.String(200))
-    Sendfiles = db.Column('Sendfiles', db.String(200))
-    Sendasfiles = db.Column('Sendasfiles', db.String(200))
-    Jolist= db.Column('Jolist', db.String(200))
+    Sendfiles = db.Column('Sendfiles', db.String(1000))
+    Sendasfiles = db.Column('Sendasfiles', db.String(1000))
+    Jolist= db.Column('Jolist', db.String(500))
     Emailtype = db.Column('Emailtype', db.String(45))
     Mid = db.Column('Mid', db.String(100))
     Customer = db.Column('Customer', db.String(45))
-    Container = db.Column('Container', db.String(45))
+    Container = db.Column('Container', db.String(500))
     Date1 = db.Column('Date1', db.DateTime)
     Datelist = db.Column('Datelist', db.String(200))
     From = db.Column('From', db.String(45))
@@ -763,8 +784,11 @@ class People(db.Model):
     Date2 = db.Column('Date2', db.DateTime)
     Source = db.Column('Source', db.String(200))
     Accountid = db.Column('Accountid', db.Integer)
+    Saljp = db.Column('Saljp', db.String(45))
+    Saloa = db.Column('Saloa', db.String(45))
+    Salap = db.Column('Salap', db.String(45))
 
-    def __init__(self, Ptype, Company, First, Middle, Last, Addr1, Addr2, Addr3, Idtype, Idnumber, Telephone, Email, Associate1, Associate2, Temp1, Temp2, Date1, Date2, Source, Accountid):
+    def __init__(self, Ptype, Company, First, Middle, Last, Addr1, Addr2, Addr3, Idtype, Idnumber, Telephone, Email, Associate1, Associate2, Temp1, Temp2, Date1, Date2, Source, Accountid, Saljp, Saloa, Salap):
         self.Ptype = Ptype
         self.Company = Company
         self.First = First
@@ -785,6 +809,9 @@ class People(db.Model):
         self.Date2 = Date2
         self.Source = Source
         self.Accountid = Accountid
+        self.Saljp = Saljp
+        self.Saloa = Saloa
+        self.Salap = Salap
 
 
 
@@ -1196,9 +1223,9 @@ class SumInv(db.Model):
     Cache = db.Column('Cache', db.Integer)
     Pid = db.Column('Pid', db.Integer)
     Billto = db.Column('Billto', db.String(50))
-    InvoDate = db.Column('InvoDate', db.DateTime)
+    Date = db.Column('Date', db.DateTime)
 
-    def __init__(self, Si, Jo, Begin, End, Release, Container, Type, Description, Amount, Source, Status, Cache, Pid, Total, Billto, InvoDate):
+    def __init__(self, Si, Jo, Begin, End, Release, Container, Type, Description, Amount, Source, Status, Cache, Pid, Total, Billto, Date):
         self.Jo = Jo
         self.Si = Si
         self.Begin = Begin
@@ -1214,7 +1241,7 @@ class SumInv(db.Model):
         self.Cache = Cache
         self.Pid = Pid
         self.Billto = Billto
-        self.InvoDate = InvoDate
+        self.Date = Date
 
 
 class Income(db.Model):
