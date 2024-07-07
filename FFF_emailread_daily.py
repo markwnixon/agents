@@ -15,7 +15,7 @@ scac = scac.upper()
 nt = 'remote'
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
-    print(f'Running FFF_task_gate_now for {scac} in tunnel mode: {nt}')
+    print(f'Running FFF_emailread_daily for {scac} in tunnel mode: {nt}')
 
     host_name = socket.gethostname()
     print("Host Name:", host_name)
@@ -48,7 +48,7 @@ from cronfuncs import newjo
 from datetime import timedelta
 from fpdf import FPDF
 
-booking_p=re.compile("[1259][0123456789]{8}|[E][BKG0123456789Q]{11}|[012][PHL0123456789]{9}|[S][-0123456789]{10}|[S][0123456789]{9}|[0O][0123456789VRO]{11}")
+booking_p=re.compile("[1259][0123456789]{8}|[EBKG][0123456789]{8}|[EBKGQ][0123456789]{8}|[012][PHL0123456789]{9}|[S][-0123456789]{10}|[S][0123456789]{9}|[0O][0123456789VRO]{11}")
 
 #_____________________________________________________________________________________________________________
 # Switches for routines
