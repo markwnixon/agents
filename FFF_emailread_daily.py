@@ -395,7 +395,7 @@ if 1==1:
                                        Icache=0, Mcache=0, Pkcache=0, QBi=None, InvoTotal='370.00', Truck=None,
                                        Dropblock3=None, Date3=pulldate, Location3=None, InvoDate=None, PaidDate=None,
                                        PaidAmt=None, PayRef=None, PayMeth=None, PayAcct=None, BalDue=None, Payments=None, Quote=None,
-                                       Date4=None,Date5=None,Date6=None)
+                                       Date4=None,Date5=None,Date6=None,RateCon=None,Rcache=0,Proof2=None,Pcache2=0,Emailjp=None,Emailoa=None,Saljp=None,Saloa=None,Salap=None)
 
 
                         db.session.add(input)
