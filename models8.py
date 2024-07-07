@@ -1244,6 +1244,7 @@ class SumInv(db.Model):
         self.Date = Date
 
 
+
 class Income(db.Model):
     __tablename__ = 'income'
     id = db.Column('id', db.Integer, primary_key=True)

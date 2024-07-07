@@ -14,6 +14,7 @@ ar_path = f'{dropbox_path}/Dray/{scac}_AR_Report.xlsx'
 sys_path = getpaths(host_name, 'system')
 sys.path.append(sys_path)  # So we can import CCC_system_setup from full path
 
+
 os.environ['SCAC'] = scac
 os.environ['PURPOSE'] = 'script'
 os.environ['MACHINE'] = host_name
