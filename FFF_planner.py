@@ -52,7 +52,7 @@ if scac != 'nogo':
     cdata = companydata()
     tcode= cdata[10]
 
-    booking_p=re.compile("[1259][0123456789]{8}|[E][BKG0123456789Q]{11}|[012][PHL0123456789]{9}|[S][-0123456789]{10}|[S][0123456789]{9}|[0O][0123456789VRO]{11}")
+    booking_p = re.compile("[1259][0123456789]{8}|EBKG[0123456789]{8}|EBKGQ[0123456789]{8}|[012][PHL0123456789]{9}|[S][-0123456789]{10}|[S][0123456789]{9}|[0O][0123456789VRO]{11}")
     container_p=re.compile("[A-Z,a-z]{4}[0123456789]{7}[\s]")
 
     #Context = 0 for planning of today, contaxt =1 for planning of tomorrow
