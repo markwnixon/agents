@@ -72,3 +72,8 @@ class JO(db.Model):
 
 test = JO.query.filter(JO.id > 1).first()
 print(f'Successfully opened tunnel to JO id {test.id}')
+
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+        app.run(debug=True)

@@ -31,6 +31,7 @@ if nt == 'local':
     app.secret_key = dbp[5]
 
     print(f'username:{dbp[1]},password:{dbp[2]},hostname:{dbp[3]},databasname:{dbp[4]}')
+    print('This for new computer')
 
 else:
     # Then tunneling to a remote database

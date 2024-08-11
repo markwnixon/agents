@@ -31,7 +31,7 @@ try:
     nt = 'remote'
 except:
     print('Must have at least one argument...FELA or OSLM or NEVO')
-    scac = 'FELA'
+    scac = 'OSLM'
     nt = 'remote'
 
 scac = scac.upper()
