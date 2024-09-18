@@ -6,7 +6,13 @@ from bs4 import BeautifulSoup as soup
 import time
 from datetime import datetime, timedelta
 from pyvirtualdisplay import Display
+
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
+from selenium.common.exceptions import *
 
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
@@ -91,6 +97,20 @@ def get_driver(movetyp,finder):
         if pdat is not None:
             return pdat.Driver
     return driver
+
+def softwait(browser, xpath):
+    print('made it to softwait')
+    closebutx = "//*[contains(@type,'button')]"
+    if 1 == 1:
+        wait = WebDriverWait(browser, 16, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
+        elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        #elem = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, xpath)))
+    if 1 == 2:
+        textboxes = browser.find_elements_by_xpath(xpath)
+        if textboxes:
+            for textbox in textboxes:
+                print(f'Finding textboxes on page: {textbox.text}')
+    return
 
 def blendticks(gfile1,gfile2,outfile):
 
@@ -368,7 +388,7 @@ def gatescraper(printif, dayback):
     startdate = yesterday
     enddate = todaystr
     consets = []
-    print('startdate is:',yesterday)
+    print('startdate is xxx:',yesterday)
     print('enddate is:',todaystr)
     addtext = addtext + f'Startdate: {yesterday}<br>Enddate: {todaystr}'
 
@@ -386,24 +406,24 @@ def gatescraper(printif, dayback):
 
         with webdriver.Firefox() as browser:
 
+            browser.get(url1)
+            print('Got url1') if printif == 1 else 1
+            time.sleep(4)
+            print('Done Sleeping') if printif == 1 else 1
+            print('Getting xpath') if printif == 1 else 1
+            selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
+            print('Got xpath for Username') if printif == 1 else 1
+            selectElem.clear()
+            selectElem.send_keys(username)
+
+            selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
+            print('Got xpath for Password') if printif == 1 else 1
+            selectElem.clear()
+            selectElem.send_keys(password)
+            time.sleep(1)
+            selectElem.submit()
+
             while logontrys<4 and logonyes == 0:
-
-                browser.get(url1)
-                print('Got url1') if printif == 1 else 1
-                time.sleep(4)
-                print('Done Sleeping') if printif == 1 else 1
-                print('Getting xpath') if printif == 1 else 1
-                selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
-                print('Got xpath for Username') if printif == 1 else 1
-                selectElem.clear()
-                selectElem.send_keys(username)
-
-                selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
-                print('Got xpath for Password') if printif == 1 else 1
-                selectElem.clear()
-                selectElem.send_keys(password)
-                time.sleep(1)
-                selectElem.submit()
                 time.sleep(4)
                 newurl = browser.current_url
                 print('newurl=', newurl, flush=True) if printif == 1 else 1
@@ -419,6 +439,7 @@ def gatescraper(printif, dayback):
                 time.sleep(4)
                 print('newurl=', newurl, flush=True)
 
+                softwait(browser, '//*[@id="StartDate"]')
                 try:
                     selectElem = browser.find_element_by_xpath('//*[@id="StartDate"]')
                     selectElem.clear()
