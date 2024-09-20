@@ -85,6 +85,21 @@ def softwait(browser, xpath):
     try:
         wait = WebDriverWait(browser, 16, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
         elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        time.sleep(1)
+        #elem = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, xpath)))
+    except:
+        textboxes = browser.find_elements_by_xpath(xpath)
+        if textboxes:
+            for textbox in textboxes:
+                print(f'Finding textboxes on page: {textbox.text}')
+    return
+
+def softwait_long(browser, xpath):
+    closebutx = "//*[contains(@type,'button')]"
+    try:
+        wait = WebDriverWait(browser, 30, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
+        elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        time.sleep(1)
         #elem = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, xpath)))
     except:
         textboxes = browser.find_elements_by_xpath(xpath)
@@ -94,7 +109,11 @@ def softwait(browser, xpath):
     return
 
 def get_text(browser, xpath):
+    time.sleep(1)
     textboxes = browser.find_elements_by_xpath(xpath)
+    time.sleep(1)
+    print(f'The textboxes for xpath {xpath} is {textboxes}')
+    ret_text = 'xxxxx'
     if textboxes:
         for textbox in textboxes:
             thistext = textbox.text
@@ -105,11 +124,13 @@ def get_text(browser, xpath):
     return ret_text
 
 def fillapptdata(browser, d, p, thisdate):
+    softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
     selectElem.send_keys(thisdate)
     selectElem.submit()
     time.sleep(3)
 
+    softwait(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
     time.sleep(1)
     itime = p.Timeslot
@@ -152,33 +173,39 @@ def logonfox(err):
     if 1 == 1:
         browser = webdriver.Firefox()
         browser.maximize_window()
+
+        browser.get(url1)
+        print(f'Logon try {logontrys}')
+        if 1 == 1:
+            softwait(browser, '//*[@id="UserName"]')
+            selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
+            print('Got xpath for Username') if printif == 1 else 1
+            selectElem.clear()
+            selectElem.send_keys(username)
+        if 1 == 2:
+            err.append('Username did not appear within 30 sec try again')
+            return browser, newurl, logonyes, logontrys, err
+
+
+        try:
+            selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
+            print('Got xpath for Password') if printif == 1 else 1
+            selectElem.clear()
+            selectElem.send_keys(password)
+            time.sleep(1)
+            selectElem.submit()
+            time.sleep(8)
+            print('Page should be loaded now')
+        except:
+            err.append('Page did not load within 5 sec try again')
+            print('Page did not load within 5 sec try again')
+            return browser, newurl, logonyes, logontrys, err
+
+
         while logontrys < 4 and logonyes == 0:
-            browser.get(url1)
-            try:
-                softwait(browser, '//*[@id="UserName"]')
-                selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
-                print('Got xpath for Username') if printif == 1 else 1
-                selectElem.clear()
-                selectElem.send_keys(username)
-            except:
-                err.append('Username did not appear within 30 sec try again')
-                return browser, newurl, logonyes, logontrys, err
-
-
-            try:
-                selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
-                print('Got xpath for Password') if printif == 1 else 1
-                selectElem.clear()
-                selectElem.send_keys(password)
-                time.sleep(1)
-                selectElem.submit()
-                time.sleep(5)
-            except:
-                err.append('Page did not load within 5 sec try again')
-                return browser, newurl, logonyes, logontrys, err
-
             newurl = browser.current_url
-            print('newurl=', newurl, flush=True) if printif == 1 else 1
+            time.sleep(1)
+            print('newurl=', newurl, flush=True)
             if 'logon' not in newurl:
                 logonyes = 1
             else:
@@ -226,6 +253,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 #Load In Starts with Booking
                 selectElem.select_by_value('ExportsFullIn')
                 time.sleep(1)
+                softwait(browser, '//*[@id="BookingNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
                 selectElem.send_keys(p.InBook)
                 time.sleep(1)
@@ -247,7 +275,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
                 #Load In wait for textbox and extract
                 print(f'Performing softwait for textboxx: {textboxx}')
-                softwait(browser, textboxx)
+                softwait_long(browser, textboxx)
+                #softwait_popup(browser)
                 #selectElem = browser.find_element_by_xpath(textboxx)
                 #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
@@ -275,6 +304,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 time.sleep(1)
 
                 #selectElem = browser.find_element_by_xpath('//*[@id="ContainerNumber"]')
+                softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem.send_keys(p.InCon)
                 time.sleep(1)
@@ -293,7 +323,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem.submit()
 
                 #Empty In wait for textbox and extract
-                softwait(browser, textboxx)
+                softwait_long(browser, textboxx)
                 #selectElem = browser.find_element_by_xpath(textboxx)
                 #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
@@ -322,6 +352,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
             if outtype == 'Empty Out':
                 #Empty Out Start with Booking
+                softwait(browser, '//*[@id="SecondaryMoveType"]')
                 selectElem = Select(browser.find_element_by_xpath('//*[@id="SecondaryMoveType"]'))
                 selectElem.select_by_value('ExportsEmptyOut')
                 if not inbox:
@@ -351,7 +382,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
 
                 print(f'Locating element with text: {textboxx}')
-                softwait(browser, textboxx)
+                softwait_long(browser, textboxx)
                 #selectElem = browser.find_element_by_xpath(textboxx)
                 #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
@@ -404,7 +435,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem.submit()
 
                 # The popup box is different of there is an incoming box....
-                softwait(browser, textboxx)
+                softwait_long(browser, textboxx)
                 #selectElem = browser.find_element_by_xpath(textboxx)
                 #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
