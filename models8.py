@@ -399,6 +399,12 @@ class Focusareas(db.Model):
         self.Co = Co
         self.Focusid = Focusid
 
+class PortClosed(db.Model):
+    __tablename__ = 'portclosed'
+    id = db.Column('id', db.Integer, primary_key=True)
+    Date = db.Column('Date', db.DateTime)
+    Reason = db.Column('Reason', db.String(45))
+
 class Orders(db.Model):
     __tablename__ = 'orders'
     id = db.Column('id', db.Integer, primary_key=True)
@@ -426,6 +432,7 @@ class Orders(db.Model):
     Date4 = db.Column('Date4', db.DateTime)
     Date5 = db.Column('Date5', db.DateTime)
     Date6 = db.Column('Date6', db.DateTime)
+    Date7 = db.Column('Date7', db.DateTime)
     Time2 = db.Column('Time2', db.String(20))
     Time3 = db.Column('Time3', db.String(20))
     PaidInvoice = db.Column('PaidInvoice', db.String(100))
@@ -480,14 +487,15 @@ class Orders(db.Model):
     Saljp = db.Column('Saljp', db.String(45))
     Saloa = db.Column('Saloa', db.String(45))
     Salap = db.Column('Salap', db.String(45))
+    SSCO = db.Column('SSCO', db.String(45))
 
     def __init__(self, Status, Jo, HaulType, Order, Company, Location, BOL, Booking, Container, Driver, Pickup,
                  Delivery, Amount, Date, Time, Date2, Time2, Time3, PaidInvoice, Source, Description, Chassis,
                  Detention, Storage, Release, Company2, Seal, Shipper, Type, Bid, Lid, Did, Label, Dropblock1,
                  Dropblock2, Commodity, Packing, Links, Hstat, Istat, Proof, Invoice, Gate, Package, Manifest,
                  Scache, Pcache, Icache, Mcache, Pkcache, QBi, InvoTotal, Truck, Dropblock3, Location3, Date3,
-                 Date4, Date5, Date6, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments,
-                 Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap):
+                 Date4, Date5, Date6, Date7, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments,
+                 Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap, SSCO):
         self.Status = Status
         self.Jo = Jo
         self.HaulType = HaulType
@@ -547,6 +555,7 @@ class Orders(db.Model):
         self.Date4 = Date4
         self.Date5 = Date5
         self.Date6 = Date6
+        self.Date7 = Date7
         self.InvoDate = InvoDate
         self.PaidDate = PaidDate
         self.PaidAmt = PaidAmt
@@ -566,6 +575,7 @@ class Orders(db.Model):
         self.Saloa = Saloa
         self.Emailap = Emailap
         self.Salap = Salap
+        self.SSCO = SSCO
 
 class Ardata(db.Model):
     __tablename__ = 'ardata'
@@ -1679,17 +1689,129 @@ class Pins(db.Model):
 class Ships(db.Model):
     __tablename__ = 'ships'
     id = db.Column('id', db.Integer, primary_key=True)
-    Ship = db.Column('Ship', db.String(45))
-    Date = db.Column('Date', db.DateTime)  # Ship arrives
-    Date2 = db.Column('Date2', db.DateTime)  # Ship completes unload
-    Description = db.Column('Description', db.String(45))
-    Active = db.Column('Active', db.Integer, default=None)
-    def __init__(self, Ship, Date, Date2, Description, Active):
-        self.Ship = Ship
-        self.Date = Date
-        self.Date2 = Date2
-        self.Descrption = Description
+    Vessel = db.Column('Vessel', db.String(45))
+    Code = db.Column('Code', db.String(45))
+    Imports = db.Column('Imports', db.String(45))
+    VoyageIn = db.Column('VoyageIn', db.String(45))
+    VoyageOut = db.Column('VoyageOut', db.String(45))
+    SSCO = db.Column('SSCO', db.String(45))
+    ActArrival = db.Column('ActArrival', db.String(45))
+    GenCutoff = db.Column('GenCutoff', db.String(45))
+    RefCutoff = db.Column('RefCutoff', db.String(45))
+    HazCutoff = db.Column('HazCutoff', db.String(45))
+    EstArrival = db.Column('EstArrival', db.String(45))
+    EstDeparture = db.Column('EstDeparture', db.String(45))
+    ActDeparture = db.Column('ActDeparture', db.String(45))
+    Update = db.Column('Update', db.Integer)
+    def __init__(self, Vessel, Code, Imports, VoyageIn, VoyageOut, SSCO, ActArrival, GenCutoff, RefCutoff, HazCutoff, EstArrival, EstDeparture, ActDeparture, Update):
+        self.Vessel = Vessel
+        self.Code = Code
+        self.Imports = Imports
+        self.VoyageIn = VoyageIn
+        self.VoyageOut = VoyageOut
+        self.SSCO = SSCO
+        self.ActArrival = ActArrival
+        self.GenCutoff = GenCutoff
+        self.RefCutoff = RefCutoff
+        self.HazCutoff = HazCutoff
+        self.EstArrival = EstArrival
+        self.EstDeparture = EstDeparture
+        self.ActDeparture = ActDeparture
+        self.Update = Update
+
+class Exports(db.Model):
+    __tablename__ = 'exports'
+    id = db.Column('id', db.Integer, primary_key=True)
+    Jo = db.Column('Jo', db.String(25))
+    Booking = db.Column('Booking', db.String(45))
+    SSCO = db.Column('SSCO', db.String(45))
+    Vessel = db.Column('Vessel', db.String(45))
+    Voyage = db.Column('Voyage', db.String(45))
+    EmptyStart = db.Column('EmptyStart', db.String(45))
+    GeneralBR = db.Column('GeneralBR', db.String(45))
+    ReeferBR = db.Column('ReeferBR', db.String(45))
+    HazBR = db.Column('HazBR', db.String(45))
+    GeneralCut = db.Column('GeneralCut', db.String(45))
+    ReeferCut = db.Column('ReeferCut', db.String(45))
+    HazCut = db.Column('HazCut', db.String(45))
+    LoadingAt = db.Column('LoadingAt', db.String(45))
+    Length = db.Column('Length', db.String(45))
+    Type = db.Column('Type', db.String(45))
+    Height = db.Column('Height', db.String(45))
+    Total = db.Column('Total', db.Integer)
+    Received = db.Column('Received', db.Integer)
+    Delivered = db.Column('Delivered', db.Integer)
+    Update = db.Column('Update', db.Integer)
+    Active = db.Column('Active', db.Integer)
+    Screen = db.Column('Screen', db.String(45))
+    def __init__(self, Jo, Booking, SSCO, Vessel, Voyage, EmptyStart, GeneralBR, ReeferBR, HazBR, GeneralCut, ReeferCut, HazCut, LoadingAt, Length, Type, Height, Total, Received, Delivered, Update, Active, Screen):
+        self.Jo = Jo
+        self.Booking = Booking
+        self.SSCO = SSCO
+        self.Vessel = Vessel
+        self.Voyage = Voyage
+        self.EmptyStart = EmptyStart
+        self.GeneralBR = GeneralBR
+        self.ReeferBR = ReeferBR
+        self.HazBR = HazBR
+        self.GeneralCut = GeneralCut
+        self.ReeferCut = ReeferCut
+        self.HazCut = HazCut
+        self.LoadingAt = LoadingAt
+        self.Length = Length
+        self.Type = Type
+        self.Height = Height
+        self.Total = Total
+        self.Received = Received
+        self.Delivered = Delivered
+        self.Update = Update
         self.Active = Active
+        self.Screen = Screen
+
+class Imports(db.Model):
+    __tablename__ = 'imports'
+    id = db.Column('id', db.Integer, primary_key=True)
+    Jo = db.Column('Jo', db.String(25))
+    BOL = db.Column('BOL', db.String(45))
+    Verified = db.Column('Verified', db.Integer)
+    Ready = db.Column('Ready', db.Integer)
+    Container = db.Column('Container', db.String(45))
+    LineStatus = db.Column('LineStatus', db.String(45))
+    CustomsStatus = db.Column('CustomsStatus', db.String(45))
+    OtherHolds = db.Column('OtherHolds', db.String(45))
+    Location = db.Column('Location', db.String(45))
+    Position = db.Column('Position', db.String(45))
+    PTD = db.Column('PTD', db.String(45))
+    LFD = db.Column('LFD', db.String(45))
+    TermDem = db.Column('TermDem', db.String(45))
+    NonDem = db.Column('NonDem', db.String(45))
+    Size = db.Column('Size', db.String(45))
+    Vessel = db.Column('Vessel', db.String(45))
+    Voyage = db.Column('Voyage', db.String(45))
+    Update = db.Column('Update', db.Integer)
+    Active = db.Column('Active', db.Integer)
+    Screen = db.Column('Screen', db.String(45))
+    def __init__(self, Jo, BOL, Verified, Ready, Container, LineStatus, CustomsStatus, OtherHolds, Location, Position, PTD, LFD, TermDem, NonDem, Size, Vessel, Voyage, Update, Active, Screen ):
+        self.Jo = Jo
+        self.BOL = BOL
+        self.Verified = Verified
+        self.Ready = Ready
+        self.Container = Container
+        self.LineStatus = LineStatus
+        self.CustomsStatus = CustomsStatus
+        self.OtherHolds = OtherHolds
+        self.Location = Location
+        self.Position = Position
+        self.PTD = PTD
+        self.LFD = LFD
+        self.TermDem = TermDem
+        self.NonDem = NonDem
+        self.Size = Size
+        self.Vessel = Vessel
+        self.Voyage = Voyage
+        self.Update = Update
+        self.Active = Active
+        self.Screen = Screen
 
 class Newjobs(db.Model):
     __tablename__ = 'newjobs'

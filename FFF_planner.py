@@ -404,6 +404,11 @@ if scac != 'nogo':
                             db.session.add(input)
                             db.session.commit()
 
+                            okat = Orders.query.filter(Orders.Container == incon).order_by(Orders.id.desc()).first()
+                            if okat is not None:
+                                okat.BOL = inbook
+                                db.session.commit()
+
         joblines.append(f'*Other Jobs {dow1}*')
         tomdev = [f'*Pulls Today for Delivery {dow2}*']
         print(f'Looking at Orders from')

@@ -466,13 +466,26 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
 
 #*********************************************************************
+conyes = 0
+contrys = 0
+print(f'Attempting to connect to database and table Pins....')
+while contrys < 4 and conyes == 0:
+    try:
+        pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot > 0) & (Pins.Date >= today)).all()
+        nruns = len(pdata)
+        conyes = 1
+    except:
+        print(f'Could not connect to database on try {contrys}')
+        contrys += 1
+    time.sleep(1)
 
-pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot > 0) & (Pins.Date >= today)).all()
-nruns = len(pdata)
-logonyes=0
-if nruns == 0:
-    print(f'There are no pins required per database')
+if nruns == 0 or conyes == 0:
+    if conyes == 0:
+        print('Could not connect to database')
+    else:
+        print(f'There are no pins required per database')
     quit()
+
 if nruns > 0:
     print(f'The pin database requires {nruns} new interchange sequences as follows:')
     for pdat in pdata:
@@ -492,6 +505,8 @@ if nruns > 0:
 
 
 if nruns > 0:
+    logonyes = 0
+    logontrys = 0
     #Log on to browser
     err = []
     browser, url, logonyes, logontrys, err = logonfox(err)
