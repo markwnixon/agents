@@ -463,76 +463,78 @@ while good_con < 4:
         print(f'Connection try again number {good_con}')
 
 if good_con == 8:
-    browser = webdriver.Firefox()
-    browser.maximize_window()
-    for imp in imports:
-        jo = imp.Jo
-        container = imp.Container
-        BOL = imp.Booking
-        tdate = imp.Date3
-        status = imp.Status
-        ssco = imp.SSCO
-        print(f'Getting data for JO {jo} import container {container} that has date of {tdate} has ssco :{ssco}:')
-        url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=containerByContainer&numbers={container}'
-        browser.get(url)
-        #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
-        #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]'
-        this_id = "inquiries-container-availability-table"
-        failed = softwait_id(browser, this_id)
-        if not failed:
-            con_data = get_container_data(2, 14)
-            print(con_data)
-            idat = Imports.query.filter((Imports.Container == container) & (Imports.Active == 1)).order_by(Imports.id.desc()).first()
+    with display():
+        with webdriver.Firefox() as browser:
+            #browser = webdriver.Firefox()
+            browser.maximize_window()
+            for imp in imports:
+                jo = imp.Jo
+                container = imp.Container
+                BOL = imp.Booking
+                tdate = imp.Date3
+                status = imp.Status
+                ssco = imp.SSCO
+                print(f'Getting data for JO {jo} import container {container} that has date of {tdate} has ssco :{ssco}:')
+                url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=containerByContainer&numbers={container}'
+                browser.get(url)
+                #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
+                #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]'
+                this_id = "inquiries-container-availability-table"
+                failed = softwait_id(browser, this_id)
+                if not failed:
+                    con_data = get_container_data(2, 14)
+                    print(con_data)
+                    idat = Imports.query.filter((Imports.Container == container) & (Imports.Active == 1)).order_by(Imports.id.desc()).first()
 
-            if idat is None:
-                # The job is not in the import database yet, but has a successful find in the port data
-                update_version = 1
-                ssfilebase = f'{container}_{today}.png'
-                ssfile = addpath3(f'{scac}/{ssfilebase}')
-                browser.get_screenshot_as_file(ssfile)
-                copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                print('copyline=', copyline)
-                os.system(copyline)
-                verified, ssco = check_BOL(browser, BOL)
-                import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
-                order_update_import(imp,jo,verified,ssco)
-                con_len = con_data[13]
-                order_con_type = imp.Type
-                con_check(con_len, order_con_type)
+                    if idat is None:
+                        # The job is not in the import database yet, but has a successful find in the port data
+                        update_version = 1
+                        ssfilebase = f'{container}_{today}.png'
+                        ssfile = addpath3(f'{scac}/{ssfilebase}')
+                        browser.get_screenshot_as_file(ssfile)
+                        copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
+                        print('copyline=', copyline)
+                        os.system(copyline)
+                        verified, ssco = check_BOL(browser, BOL)
+                        import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
+                        order_update_import(imp,jo,verified,ssco)
+                        con_len = con_data[13]
+                        order_con_type = imp.Type
+                        con_check(con_len, order_con_type)
 
 
-            else:
-                # The job is in the import database yet, and has a successful find in the port data
-                # See if an update is required:
-                update_needed = import_update_check(BOL, idat, con_data)
-                if update_needed:
-                    update_version = idat.Update + 1
-                    ssfilebase = f'{container}_{today}.png'
-                    ssfile = addpath3(f'{scac}/{ssfilebase}')
-                    browser.get_screenshot_as_file(ssfile)
-                    copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                    print('copyline=', copyline)
-                    os.system(copyline)
-                    verified, ssco = check_BOL(browser, BOL)
-                    import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
-                elif status == 'SNF' or not hasinput(ssco):
-                    verified, ssco = check_BOL(browser, BOL)
-                    print(f'For SNF block: {verified}, {ssco}')
+                    else:
+                        # The job is in the import database yet, and has a successful find in the port data
+                        # See if an update is required:
+                        update_needed = import_update_check(BOL, idat, con_data)
+                        if update_needed:
+                            update_version = idat.Update + 1
+                            ssfilebase = f'{container}_{today}.png'
+                            ssfile = addpath3(f'{scac}/{ssfilebase}')
+                            browser.get_screenshot_as_file(ssfile)
+                            copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
+                            print('copyline=', copyline)
+                            os.system(copyline)
+                            verified, ssco = check_BOL(browser, BOL)
+                            import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
+                        elif status == 'SNF' or not hasinput(ssco):
+                            verified, ssco = check_BOL(browser, BOL)
+                            print(f'For SNF block: {verified}, {ssco}')
+                        else:
+                            verified = 0
+                        order_update_import(imp, jo, verified, ssco)
+
+
                 else:
-                    verified = 0
-                order_update_import(imp, jo, verified, ssco)
-
-
-        else:
-            # The job is not yet of file at port
-            # See if already in the import database:
-            checkimp = Imports.query.filter(Imports.Jo == jo).first()
-            if checkimp is None:
-                import_add_temp(jo, BOL, container)
-            else:
-                checkimp.Verified = 0
-                db.session.commit()
-            # Report the container not on file yet
+                    # The job is not yet of file at port
+                    # See if already in the import database:
+                    checkimp = Imports.query.filter(Imports.Jo == jo).first()
+                    if checkimp is None:
+                        import_add_temp(jo, BOL, container)
+                    else:
+                        checkimp.Verified = 0
+                        db.session.commit()
+                    # Report the container not on file yet
 
 
     browser.quit()
@@ -551,52 +553,40 @@ if good_con == 8:
             print(f'Connection try again number {good_con}')
 
     with Display():
-        browser = webdriver.Firefox()
-        browser.maximize_window()
-        for exp in exports:
-            jo = exp.Jo
-            status = exp.Status
-            booking = exp.Booking
-            booking = booking.split('-', 1)[0]
-            tdate = exp.Date3
-            print(f'Getting data for export booking {booking} for date {tdate}')
-            url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=bookingInquiry&numbers={booking}'
-            browser.get(url)
-            #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
-            #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]'
-            this_id = "inquiries-booking-table"
-            softwait_id(browser, this_id)
-            print(f'Completed soft wait for export booking {booking}')
-            #selectElem = browser.find_element_by_xpath('//*[@id="inquiries-booking-table"]/tbody/tr/td[1]/button/div/span')
-            #selectElem.click()
-            #vessel_xpath = '/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
-            #vessel_xpath = '//*[@id="inquiries-booking-vessel-info-table - 0}"]/tbody/tr/td[1]'
-            vessel_xpath = '/html/body/div[5]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
+        with webdriver.Firefox() as browser:
+            #browser = webdriver.Firefox()
+            browser.maximize_window()
+            for exp in exports:
+                jo = exp.Jo
+                status = exp.Status
+                booking = exp.Booking
+                booking = booking.split('-', 1)[0]
+                tdate = exp.Date3
+                print(f'Getting data for export booking {booking} for date {tdate}')
+                url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=bookingInquiry&numbers={booking}'
+                browser.get(url)
+                #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
+                #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]'
+                this_id = "inquiries-booking-table"
+                softwait_id(browser, this_id)
+                print(f'Completed soft wait for export booking {booking}')
+                #selectElem = browser.find_element_by_xpath('//*[@id="inquiries-booking-table"]/tbody/tr/td[1]/button/div/span')
+                #selectElem.click()
+                #vessel_xpath = '/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
+                #vessel_xpath = '//*[@id="inquiries-booking-vessel-info-table - 0}"]/tbody/tr/td[1]'
+                vessel_xpath = '/html/body/div[5]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
 
-            failed = softwait_xpath(browser, vessel_xpath)
-            if not failed:
-                vs_data = get_vessel_data(1, 11)
-                print(vs_data)
-                bk_data = get_booking_data(1,6)
-                print(bk_data)
+                failed = softwait_xpath(browser, vessel_xpath)
+                if not failed:
+                    vs_data = get_vessel_data(1, 11)
+                    print(vs_data)
+                    bk_data = get_booking_data(1,6)
+                    print(bk_data)
 
-                edat = Exports.query.filter((Exports.Booking == booking) & (Exports.Jo == jo) & (Exports.Active == 1)).order_by(Exports.id.desc()).first()
+                    edat = Exports.query.filter((Exports.Booking == booking) & (Exports.Jo == jo) & (Exports.Active == 1)).order_by(Exports.id.desc()).first()
 
-                if edat is None:
-                    update_version = 1
-                    ssfilebase = f'{booking}_{today}.png'
-                    ssfile = addpath3(f'{scac}/{ssfilebase}')
-                    browser.get_screenshot_as_file(ssfile)
-                    copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                    print('copyline=', copyline)
-                    os.system(copyline)
-                    export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
-                    order_update_export(exp, jo)
-
-                else:
-                    update_needed = export_update_check(edat, vs_data, bk_data)
-                    if update_needed:
-                        update_version = edat.Update + 1
+                    if edat is None:
+                        update_version = 1
                         ssfilebase = f'{booking}_{today}.png'
                         ssfile = addpath3(f'{scac}/{ssfilebase}')
                         browser.get_screenshot_as_file(ssfile)
@@ -604,29 +594,42 @@ if good_con == 8:
                         print('copyline=', copyline)
                         os.system(copyline)
                         export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
-                    order_update_export(exp, jo)
-                    #if status == 'SNF': order_update_export(exp, jo)
+                        order_update_export(exp, jo)
 
-                con_len = bk_data[1]
-                order_con_type = exp.Type
-                con_check(con_len, order_con_type)
+                    else:
+                        update_needed = export_update_check(edat, vs_data, bk_data)
+                        if update_needed:
+                            update_version = edat.Update + 1
+                            ssfilebase = f'{booking}_{today}.png'
+                            ssfile = addpath3(f'{scac}/{ssfilebase}')
+                            browser.get_screenshot_as_file(ssfile)
+                            copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
+                            print('copyline=', copyline)
+                            os.system(copyline)
+                            export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
+                        order_update_export(exp, jo)
+                        #if status == 'SNF': order_update_export(exp, jo)
+
+                    con_len = bk_data[1]
+                    order_con_type = exp.Type
+                    con_check(con_len, order_con_type)
 
 
-            else:
-                print(f'Failed to find export booking {booking}')
-                # The booking is not yet of file at port
-                # See if already in the export database:
-                checkexp = Exports.query.filter(Exports.Jo == jo).first()
-                if checkexp is None:
-                    export_add_temp(jo, booking)
                 else:
-                    checkexp.Verified = 0
+                    print(f'Failed to find export booking {booking}')
+                    # The booking is not yet of file at port
+                    # See if already in the export database:
+                    checkexp = Exports.query.filter(Exports.Jo == jo).first()
+                    if checkexp is None:
+                        export_add_temp(jo, booking)
+                    else:
+                        checkexp.Verified = 0
+                        db.session.commit()
                     db.session.commit()
-                db.session.commit()
-                # Report the booking not on file yet
-        #############################################################################################################################################
+                    # Report the booking not on file yet
+            #############################################################################################################################################
 
-        browser.quit()
+            browser.quit()
 
     # Now clear up the import and export database for runs that have been completed..make them inactive 5 days after completion.
     importx = Orders.query.filter(Orders.HaulType.contains('Import') & (Orders.Hstat > 1) & (Orders.Date3 > lbdate)).all()
