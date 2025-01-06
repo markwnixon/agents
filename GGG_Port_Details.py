@@ -463,7 +463,7 @@ while good_con < 4:
         print(f'Connection try again number {good_con}')
 
 if good_con == 8:
-    with display():
+    with Display():
         with webdriver.Firefox() as browser:
             #browser = webdriver.Firefox()
             browser.maximize_window()
