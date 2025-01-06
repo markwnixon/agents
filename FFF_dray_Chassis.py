@@ -18,7 +18,7 @@ try:
     scac = sys.argv[1]
 except:
     print('Must have at least one argument...FELA or OSLM or NEVO')
-    scac = 'nogo'
+    scac = 'fela'
 
 scac = scac.upper()
 nt = 'remote'
@@ -258,6 +258,7 @@ if scac != 'nogo':
     wv = oxl['DCLI Invoices']
 
     for tfile in dlist:
+        print(f'DCLI filename is: {tfile}')
         invonum = tfile.replace('invoice_audit','').replace('.xls','')
         print(invonum)
         if invonum in invo_old:

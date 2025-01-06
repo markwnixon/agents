@@ -12,7 +12,7 @@ today = datetime.datetime.today()
 today_str = today.strftime("%m/%d/%Y")
 d = today.strftime("%B %d, %Y")
 print(today)
-cutoff = datetime.datetime.now() - timedelta(180)
+cutoff = datetime.datetime.now() - timedelta(360)
 cutoff = cutoff.date()
 over30 = datetime.datetime.now() - timedelta(30)
 over30 = over30.date()
@@ -22,7 +22,7 @@ try:
     scac = sys.argv[1]
 except:
     print('Must have at least one argument...FELA or OSLM or NEVO')
-    scac = 'fela'
+    scac = 'oslm'
 
 scac = scac.upper()
 nt = 'remote'
@@ -42,7 +42,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     os.environ['TUNNEL'] = nt
 
     from remote_db_connect import tunnel, db
-    from models8 import Orders, Interchange, Invoices
+    from models8 import Orders, Interchange, Invoices, SumInv
 
 else:
     scac = 'nogo'
@@ -89,6 +89,8 @@ if scac != 'nogo':
             trys = trys + 1
 
     if success == 1:
+        siopen = []
+        other_open = []
         for gdat in gdata:
             bk1 = 'None'
             bk2 = 'None'
@@ -99,6 +101,13 @@ if scac != 'nogo':
             jo = gdat.Jo
             links = gdat.Links
             label = gdat.Label
+            if label is None: label = gdat.Order
+            if label is not None:
+                if 'SI' in label:
+                    if label not in siopen: siopen.append(label)
+                else:
+                    label = gdat.Order
+                    other_open.append(jo)
             if links is None: links = ''
             int_data = Interchange.query.filter(Interchange.Jo == jo).all()
             if len(int_data) >= 1:
@@ -145,5 +154,43 @@ if scac != 'nogo':
         #dfc.auto_filter.add_filter_column(8, ['Inactive'])
         #dfc.auto_filter.add_sort_condition(f'I2:I{row}')
         wb.save(ar_path)
+
+    #Run the summary invoice assessment:
+    print(siopen)
+    for si in siopen:
+        sdata = SumInv.query.filter(SumInv.Si == si).all()
+        num_sum = len(sdata)
+        num_open = 0
+        jolist_open = []
+        jolist_paid = []
+        jolist_gone = []
+        for sdat in sdata:
+            jo = sdat.Jo
+            idat = Orders.query.filter(Orders.Jo == jo).first()
+            if idat is not None:
+                istat = idat.Istat
+                if istat != 8:
+                    jolist_open.append(idat.Jo)
+                    num_open += 1
+                else:
+                    jolist_paid.append(idat.Jo)
+            else:
+                jolist_gone.append(jo)
+        print('')
+        print(f'Summary Invoice {sdat.Si} totaling {sdat.Total} emailed on {sdat.Date}')
+        print(f'There are {num_sum} jobs on this summary invoice and {num_open} are still open')
+        if num_sum != num_open: print(f'*********** Need to Investigate.  Why are {num_sum} and {num_open} not same *********')
+        print(f'The jobs still open are: {jolist_open}')
+        print(f'The jobs paid are: {jolist_paid}')
+        print(f'The jobs gone/missing are: {jolist_gone}')
+        print('')
+
+    for jo in other_open:
+        #idat = Orders.query.filter(Orders.Jo == jo).first()
+        idat = Invoices.query.filter(Invoices.Jo == jo).first()
+        if idat is not None:
+            odat = Orders.query.filter(Orders.Jo == jo).first()
+            if odat is not None:
+                print(f'Regular invoice open for JO: {jo} ({odat.Order}|{odat.Booking}|{odat.Container} Total {idat.Total} emailed on {idat.Date}')
 
     tunnel.stop()

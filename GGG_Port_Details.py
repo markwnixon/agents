@@ -117,7 +117,7 @@ def get_container_data(ix1,ix2):
 def get_vessel_data(ix1,ix2):
     tt = [''] * (ix2+1)
     for ix in range(ix1,ix2+1):
-        xpath = f'/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[{ix}]'
+        xpath = f'/html/body/div[5]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[{ix}]'
         try:
             selectElem = browser.find_element_by_xpath(xpath)
             tt[ix] = selectElem.text
@@ -128,7 +128,7 @@ def get_vessel_data(ix1,ix2):
 def get_booking_data(ix1,ix2):
     tt = [''] * (ix2+1)
     for ix in range(ix1,ix2+1):
-        xpath = f'/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[2]/div[2]/div/table/tbody/tr/td[{ix}]'
+        xpath = f'/html/body/div[5]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[2]/div[2]/div/table/tbody/tr/td[{ix}]'
         try:
             selectElem = browser.find_element_by_xpath(xpath)
             tt[ix] = selectElem.text
@@ -147,9 +147,10 @@ def check_BOL(browser, BOL):
         try:
             selectElem = browser.find_element_by_xpath(xpath)
             SSCO = selectElem.text
+            return 1, SSCO
         except:
             SSCO = None
-        return 1, SSCO
+            return 0, SSCO
 
 def next_business_day(date, jx):
     next_day = date
@@ -215,55 +216,83 @@ def export_update_check(edat, vs, bk):
     if edat.EmptyStart != vs[4] or edat.GeneralBR != vs[5] or edat.ReeferBR != vs[6] or edat.HazBR != vs[7]: return 1
     if edat.GeneralCut != vs[8] or edat.ReeferCut != vs[9] or edat.HazCut != vs[10]: return 1
     if edat.LoadingAt != vs[11] or edat.Length != bk[1] or edat.Type != bk[2] or edat.Height != bk[3]: return 1
+    if bk[4] is None or bk[5] is None or bk[6] is None: return 1
     if edat.Total != int(bk[4]) or edat.Received != int(bk[5]) or edat.Delivered != int(bk[6]): return 1
     return 0
 
-def order_update_import(ord,jo,verified):
+def order_update_import(ord,jo,verified,ssco):
     hstat = ord.Hstat
-
+    print(f'Updating import :{ord.Jo}: with hstat {hstat} and jo :{jo}: and ssco {ssco}')
     #Things to update if container still in port
     if hstat < 1:
+        good_for_update = 1
         impdat = Imports.query.filter(Imports.Jo == jo).order_by(Imports.id.desc()).first()
-        vessel = impdat.Vessel
-        vessel = vessel.strip()
-        voyage = impdat.Voyage
-        voyage = voyage.strip()
-        ship = Ships.query.filter((Ships.Vessel==vessel) & (Ships.VoyageIn == voyage)).order_by(Ships.id.desc()).first()
-        if ship is not None:
-            arrival = ship.ActArrival
-            arrival = arrival.strip()
-            if arrival == '': arrival = ship.EstArrival
-            print(f'Converting arrival date time ::{arrival}::')
-            arrival = datetime.strptime(arrival, "%m/%d/%Y %H:%M")
-            arrival = arrival.date()
-            avail_at_port = next_business_day(arrival, 1)
-
-            lfd = impdat.LFD
-            lfd = lfd.strip()
-            if lfd == '' or lfd == 'NOF':
-                lfd = next_business_day(avail_at_port, 3)
+        if impdat is None:
+            #There may have been a JO update
+            container = ord.Container
+            impdat = Imports.query.filter(Imports.Container == container).order_by(Imports.id.desc()).first()
+            if impdat is not None:
+                impdat.Jo = jo
             else:
-                print(f'Converting lfd date time ::{lfd}::')
-                lfd = datetime.strptime(lfd, "%m/%d/%Y")
-                lfd = lfd.date()
-            ord.Date4 = avail_at_port
-            ord.Date5 = lfd
-            ord.Date6 = arrival
-            print(f'Update Order: Date4:{avail_at_port} Date5:{lfd} Date6:{arrival}')
-            planned_gate_out = ord.Date
-            planned_delivery = ord.Date3
-            planned_return = ord.Date2
-            if planned_gate_out < avail_at_port: ord.Date = avail_at_port
-            if planned_delivery < avail_at_port: ord.Date3 = avail_at_port
-            if planned_return < avail_at_port: ord.Date2 = avail_at_port + timedelta(days=1)
-            db.session.commit()
+                print(f'**** There is an issue in the imports data, no match to the order data on jo or container')
+                good_for_update = 0
+        if good_for_update:
+            vessel = impdat.Vessel
+            vessel = vessel.strip()
+            voyage = impdat.Voyage
+            voyage = voyage.strip()
+            ship = Ships.query.filter((Ships.Vessel==vessel) & (Ships.VoyageIn == voyage)).order_by(Ships.id.desc()).first()
+            if ship is not None:
+                arrival = ship.ActArrival
+                if arrival is not None: arrival = arrival.strip()
+                if arrival is None: arrival = ship.EstArrival
+                arrival = arrival.split(' ', 1)[0]
+                print(f'Converting arrival date time ::{arrival}:: for vessel {vessel}')
+                arrival = datetime.strptime(arrival, "%m/%d/%Y")
+                arrival = arrival.date()
+                avail_at_port = next_business_day(arrival, 1)
+
+                lfd = impdat.LFD
+                lfd = lfd.strip()
+                if lfd == '' or lfd == 'NOF':
+                    lfd = next_business_day(avail_at_port, 3)
+                else:
+                    print(f'Converting lfd date time ::{lfd}::')
+                    lfd = datetime.strptime(lfd, "%m/%d/%Y")
+                    lfd = lfd.date()
+                ord.Date4 = avail_at_port
+                ord.Date5 = lfd
+                ord.Date6 = arrival
+                print(f'Update Order: Date4:{avail_at_port} Date5:{lfd} Date6:{arrival}')
+                planned_gate_out = ord.Date
+                planned_delivery = ord.Date3
+                planned_return = ord.Date2
+                if planned_gate_out < avail_at_port: ord.Date = avail_at_port
+                if planned_delivery < avail_at_port:
+                    #Change delivery date, but only if the date has not been set manually/hard
+                    if ord.Status != 'MSD': ord.Date3 = avail_at_port
+                if planned_return < avail_at_port: ord.Date2 = avail_at_port + timedelta(days=1)
+
+                if verified:
+                    ord.Status = 'VER'
+                    ord.SSCO = ssco
+                    ord.Ship = vessel
+                    ord.Voyage = voyage
+
+                db.session.commit()
+
+
         else:
             print(f'Could not find Vessel:{vessel}: and Voyage:{voyage}:')
-
-        if verified:
-            ord.Status = 'VER'
+            # Need to set state for a future update once vessel appears:
+            ord.Status = 'SNF'
             ord.SSCO = ssco
+            ord.Ship = vessel
+            ord.Voyage = voyage
             db.session.commit()
+
+
+
 
     #Things to update only if container is out of port
     if hstat == 1:
@@ -277,6 +306,7 @@ def order_update_import(ord,jo,verified):
 
 def order_update_export(ord,jo):
     hstat = ord.Hstat
+    status = ord.Status
 
     #Things to update if container still in port
     if hstat < 1:
@@ -303,32 +333,48 @@ def order_update_export(ord,jo):
 
         else:
             if erd != 'NOF':
+                erd = erd.split(' ', 1)[0]
                 print(f'Converting erd date time ::{erd}::')
-                erd = datetime.strptime(erd, "%m/%d/%Y %H:%M")
+                erd = datetime.strptime(erd, "%m/%d/%Y")
                 erd = erd.date()
                 ord.Date4 = erd
-                db.session.commit()
                 print(f'Updated Order: Date4:{erd}')
             if cut != 'NOF':
+                cut = cut.split(' ', 1)[0]
                 print(f'Converting cut date time ::{cut}::')
-                cut = datetime.strptime(cut, "%m/%d/%Y %H:%M")
+                cut = datetime.strptime(cut, "%m/%d/%Y")
                 cut = cut.date()
                 ord.Date5 = cut
-                ord.SSCO = ssco
-                db.session.commit()
                 print(f'Updated Order: Date5:{cut}')
+
+            ord.Status = 'AOK'
+            ord.SSCO = ssco
+            ord.Ship = vessel
+            ord.Voyage = voyage
+            db.session.commit()
 
         ship = Ships.query.filter((Ships.Vessel==vessel) & (Ships.VoyageIn == voyage)).order_by(Ships.id.desc()).first()
         if ship is not None:
             arrival = ship.ActArrival
-            arrival = arrival.strip()
+            if arrival is not None: arrival = arrival.strip()
+            else: arrival = ''
             if arrival == '': arrival = ship.EstArrival
+            arrival = arrival.split(' ', 1)[0]
             print(f'Converting arrival date time ::{arrival}::')
-            arrival = datetime.strptime(arrival, "%m/%d/%Y %H:%M")
+            arrival = datetime.strptime(arrival, "%m/%d/%Y")
+            #arrival = datetime.strptime(arrival, "%m/%d/%Y %H:%M")
             arrival = arrival.date()
             ord.Date6 = arrival
+            ord.Ship = vessel
+            ord.Voyage = voyage
+            ord.Status = 'VER'
             db.session.commit()
             print(f'Updated Order Date6:{arrival}')
+        else:
+            ord.Ship = vessel
+            ord.Voyage = voyage
+            ord.Status = 'SNF'
+            db.session.commit()
 
 
     #Things to update only if container is out of port
@@ -351,15 +397,17 @@ def order_update_export(ord,jo):
         if erd == '' or erd == 'NOF': erd = 'NOF'
         if cut == '' or cut == 'NOF': cut = 'NOF'
         if erd != 'NOF':
+            erd = erd.split(' ', 1)[0]
             print(f'Converting erd date time ::{erd}::')
-            erd = datetime.strptime(erd, "%m/%d/%Y %H:%M")
+            erd = datetime.strptime(erd, "%m/%d/%Y")
             erd = erd.date()
             ord.Date4 = erd
             if olderd is not None:
                 if olderd != erd: print(f'****Alert*** the ERD has shifted from {olderd} to {erd}')
         if cut != 'NOF':
+            cut = cut.split(' ', 1)[0]
             print(f'Converting cut date time ::{cut}::')
-            cut = datetime.strptime(cut, "%m/%d/%Y %H:%M")
+            cut = datetime.strptime(cut, "%m/%d/%Y")
             cut = cut.date()
             ord.Date5 = cut
             if oldcut is not None:
@@ -369,6 +417,36 @@ def order_update_export(ord,jo):
     return
 
 
+def con_check(con_len, order_con_type):
+    print(f'The container size check is: {con_len}, {order_con_type}')
+
+    if '40' in con_len:
+        if '40' in order_con_type:
+            print(f'The container size check  for 40s good: {con_len}, {order_con_type}')
+        elif '20' in order_con_type:
+            print(f'The container size check  for 40s bad order has a 20: {con_len}, {order_con_type}')
+        elif '45' in order_con_type:
+            print(f'The container size check  for 40s bad order has a 45: {con_len}, {order_con_type}')
+        else:
+            print(f'The container size check  for 40s bad unknown why: {con_len}, {order_con_type}')
+    if '20' in con_len:
+        if '20' in order_con_type:
+            print(f'The container size check  for 20s good: {con_len}, {order_con_type}')
+        elif '40' in order_con_type:
+            print(f'The container size check  for 20s bad order has a 40: {con_len}, {order_con_type}')
+        elif '45' in order_con_type:
+            print(f'The container size check  for 20s bad order has a 45: {con_len}, {order_con_type}')
+        else:
+            print(f'The container size check  for 20s bad unknown why: {con_len}, {order_con_type}')
+    if '45' in con_len:
+        if '45' in order_con_type:
+            print(f'The container size check  for 45s good: {con_len}, {order_con_type}')
+        elif '40' in order_con_type:
+            print(f'The container size check  for 45s bad order has a 40: {con_len}, {order_con_type}')
+        elif '20' in order_con_type:
+            print(f'The container size check  for 45s bad order has a 20: {con_len}, {order_con_type}')
+        else:
+            print(f'The container size check  for 45s bad unknown why: {con_len}, {order_con_type}')
 
 
 
@@ -392,7 +470,9 @@ if good_con == 8:
         container = imp.Container
         BOL = imp.Booking
         tdate = imp.Date3
-        print(f'Getting data for JO {jo} import container {container} that has date of {tdate}')
+        status = imp.Status
+        ssco = imp.SSCO
+        print(f'Getting data for JO {jo} import container {container} that has date of {tdate} has ssco :{ssco}:')
         url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=containerByContainer&numbers={container}'
         browser.get(url)
         #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
@@ -415,7 +495,11 @@ if good_con == 8:
                 os.system(copyline)
                 verified, ssco = check_BOL(browser, BOL)
                 import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
-                order_update_import(imp,jo,verified)
+                order_update_import(imp,jo,verified,ssco)
+                con_len = con_data[13]
+                order_con_type = imp.Type
+                con_check(con_len, order_con_type)
+
 
             else:
                 # The job is in the import database yet, and has a successful find in the port data
@@ -431,7 +515,13 @@ if good_con == 8:
                     os.system(copyline)
                     verified, ssco = check_BOL(browser, BOL)
                     import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
-                    order_update_import(imp,jo,verified)
+                elif status == 'SNF' or not hasinput(ssco):
+                    verified, ssco = check_BOL(browser, BOL)
+                    print(f'For SNF block: {verified}, {ssco}')
+                else:
+                    verified = 0
+                order_update_import(imp, jo, verified, ssco)
+
 
         else:
             # The job is not yet of file at port
@@ -464,7 +554,9 @@ if good_con == 8:
     browser.maximize_window()
     for exp in exports:
         jo = exp.Jo
+        status = exp.Status
         booking = exp.Booking
+        booking = booking.split('-', 1)[0]
         tdate = exp.Date3
         print(f'Getting data for export booking {booking} for date {tdate}')
         url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=bookingInquiry&numbers={booking}'
@@ -476,18 +568,18 @@ if good_con == 8:
         print(f'Completed soft wait for export booking {booking}')
         #selectElem = browser.find_element_by_xpath('//*[@id="inquiries-booking-table"]/tbody/tr/td[1]/button/div/span')
         #selectElem.click()
-        vessel_xpath = '/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
+        #vessel_xpath = '/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
+        #vessel_xpath = '//*[@id="inquiries-booking-vessel-info-table - 0}"]/tbody/tr/td[1]'
+        vessel_xpath = '/html/body/div[5]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
+
         failed = softwait_xpath(browser, vessel_xpath)
         if not failed:
             vs_data = get_vessel_data(1, 11)
             print(vs_data)
             bk_data = get_booking_data(1,6)
             print(bk_data)
-            exp.Status = 'AOK'
-            exp.SSCO = vs_data[1]
-            db.session.commit()
 
-            edat = Exports.query.filter((Exports.Booking == booking) & (Exports.Active == 1)).order_by(Exports.id.desc()).first()
+            edat = Exports.query.filter((Exports.Booking == booking) & (Exports.Jo == jo) & (Exports.Active == 1)).order_by(Exports.id.desc()).first()
 
             if edat is None:
                 update_version = 1
@@ -511,9 +603,16 @@ if good_con == 8:
                     print('copyline=', copyline)
                     os.system(copyline)
                     export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
-                    order_update_export(exp, jo)
+                order_update_export(exp, jo)
+                #if status == 'SNF': order_update_export(exp, jo)
+
+            con_len = bk_data[1]
+            order_con_type = exp.Type
+            con_check(con_len, order_con_type)
+
 
         else:
+            print(f'Failed to find export booking {booking}')
             # The booking is not yet of file at port
             # See if already in the export database:
             checkexp = Exports.query.filter(Exports.Jo == jo).first()

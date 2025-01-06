@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import os
 import sys
-from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
+from PyPDF2 import PdfReader, PdfWriter, Transformation
 import socket
 from utils import getpaths
 import imaplib, email

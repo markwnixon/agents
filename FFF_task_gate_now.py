@@ -15,7 +15,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import *
 
 import pdfkit
-from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
+from PyPDF2 import PdfReader, PdfWriter, Transformation
 #from PyPDF2 import PageObject
 from utils import hasinput
 
@@ -114,23 +114,24 @@ def softwait(browser, xpath):
 
 def blendticks(gfile1,gfile2,outfile):
 
-    reader1 = PdfFileReader(open(gfile1, 'rb'))
-    p1 = reader1.getPage(0)
+    reader1 = PdfReader(open(gfile1, 'rb'))
+    p1 = reader1.pages[0]
 
-    reader2 = PdfFileReader(open(gfile2, 'rb'))
-    p2 = reader2.getPage(0)
+    reader2 = PdfReader(open(gfile2, 'rb'))
+    p2 = reader2.pages[0]
 
     paths = addpaths()
     thispath = paths[3]
     g3 = f'{thispath}blank.pdf'
     print(f'g3={g3}')
 
-    reader3 = PdfFileReader(open(g3, 'rb'))
-    p3 = reader3.getPage(0)
+    reader3 = PdfReader(open(g3, 'rb'))
+    p3 = reader3.pages[0]
     #p2.cropBox.lowerLeft = (50,400)
     #p2.cropBox.upperRight = (600,700)
     #translate first page
-    p3.mergeTranslatedPage(p1, 0, -100, expand=False)
+    p1.add_transformation(Transformation().translate(tx=0, ty=-80))
+    p3.merge_page(p1)
 
 
     #offset_x = p2.mediaBox[2]
@@ -139,12 +140,13 @@ def blendticks(gfile1,gfile2,outfile):
     offset_y = -325
 
     # add second page to first one
-    p3.mergeTranslatedPage(p2, offset_x, offset_y, expand=False)
-    p3.cropBox.lowerLeft = (50,250)
-    p3.cropBox.upperRight = (550,800)
+    p2.add_transformation(Transformation().translate(tx=offset_x, ty=offset_y))
+    p3.merge_page(p2)
+    p3.cropbox.lower_left = (50, 150)
+    p3.cropbox.upper_right = (550,800)
 
-    output = PdfFileWriter()
-    output.addPage(p3)
+    output = PdfWriter()
+    output.add_page(p3)
 
     with open(outfile, "wb") as out_f:
         output.write(out_f)
@@ -280,9 +282,9 @@ def update_records(thiscon, id):
                 ikat.Status = 'IO'
                 imat.Status = 'IO'
                 db.session.commit()
-                try:
+                if 1 == 1:
                     make_blended(okat,imat,ikat)
-                except:
+                if 1 == 2:
                     print('Could not produce blended tickets')
             else:
                 print(f'Could not find a match for the Empty in container {thiscon}')
@@ -311,9 +313,9 @@ def update_records(thiscon, id):
                 ikat.Status = 'IO'
                 imat.Status = 'IO'
                 db.session.commit()
-                try:
+                if 1 == 1:
                     make_blended(okat,imat,ikat)
-                except:
+                if 1 == 2:
                     print('Could not produce blended tickets')
 
             else:

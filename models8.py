@@ -433,6 +433,7 @@ class Orders(db.Model):
     Date5 = db.Column('Date5', db.DateTime)
     Date6 = db.Column('Date6', db.DateTime)
     Date7 = db.Column('Date7', db.DateTime)
+    Date8 = db.Column('Date8', db.DateTime)
     Time2 = db.Column('Time2', db.String(20))
     Time3 = db.Column('Time3', db.String(20))
     PaidInvoice = db.Column('PaidInvoice', db.String(100))
@@ -488,14 +489,16 @@ class Orders(db.Model):
     Saloa = db.Column('Saloa', db.String(45))
     Salap = db.Column('Salap', db.String(45))
     SSCO = db.Column('SSCO', db.String(45))
+    Ship = db.Column('Ship', db.String(45))
+    Voyage = db.Column('Voyage', db.String(45))
 
     def __init__(self, Status, Jo, HaulType, Order, Company, Location, BOL, Booking, Container, Driver, Pickup,
                  Delivery, Amount, Date, Time, Date2, Time2, Time3, PaidInvoice, Source, Description, Chassis,
                  Detention, Storage, Release, Company2, Seal, Shipper, Type, Bid, Lid, Did, Label, Dropblock1,
                  Dropblock2, Commodity, Packing, Links, Hstat, Istat, Proof, Invoice, Gate, Package, Manifest,
                  Scache, Pcache, Icache, Mcache, Pkcache, QBi, InvoTotal, Truck, Dropblock3, Location3, Date3,
-                 Date4, Date5, Date6, Date7, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments,
-                 Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap, SSCO):
+                 Date4, Date5, Date6, Date7, Date8, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments,
+                 Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap, SSCO, Ship, Voyage):
         self.Status = Status
         self.Jo = Jo
         self.HaulType = HaulType
@@ -556,6 +559,7 @@ class Orders(db.Model):
         self.Date5 = Date5
         self.Date6 = Date6
         self.Date7 = Date7
+        self.Date8 = Date8
         self.InvoDate = InvoDate
         self.PaidDate = PaidDate
         self.PaidAmt = PaidAmt
@@ -576,6 +580,8 @@ class Orders(db.Model):
         self.Emailap = Emailap
         self.Salap = Salap
         self.SSCO = SSCO
+        self.Ship = Ship
+        self.Voyage = Voyage
 
 class Ardata(db.Model):
     __tablename__ = 'ardata'

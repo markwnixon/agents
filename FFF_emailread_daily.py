@@ -29,7 +29,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     os.environ['TUNNEL'] = nt
 
     from remote_db_connect import tunnel, db
-    from models8 import Interchange, Orders, Drivers, Pins, Drops, People
+    from models8 import Interchange, Orders, Drivers, Pins, Drops, People, PortClosed
     from CCC_system_setup import websites, usernames, passwords, addpath3, imap_url, scac, companydata, nt, fromdirbase
     from email_reports import emailtxt
     from cronfuncs import conmatch
@@ -214,6 +214,16 @@ def checkdate(emaildate,filename,txtfile):
                     returnval=1
     return returnval
 
+def next_business_day(date, jx):
+    next_day = date
+    kx = 0
+    for ix in range(15):
+        next_day = next_day + timedelta(days=1)
+        pdat = PortClosed.query.filter(PortClosed.Date==next_day).first()
+        if pdat is None:
+            kx += 1
+            if kx == jx: return next_day
+
 if 1==1:
 
     def makepdf(body, date):
@@ -350,7 +360,7 @@ if 1==1:
                 d1=book[1].strftime('%Y-%m-%d')
                 d2=book[2].strftime('%Y-%m-%d')
                 pulldate = book[1] + timedelta(1)
-                indate = book[1] + timedelta(2)
+                indate = next_business_day(pulldate, 1)
                 doc = book[4]
                 try:
                     size = book[3]
@@ -381,7 +391,7 @@ if 1==1:
                         if doc == 'fail': doc = None
                         print(doc)
 
-                        input = Orders(Status='AO', Jo=nextjo, HaulType='Dray Export', Order=order, Bid=bid, Lid=lid,
+                        input = Orders(Status='AO', Jo=nextjo, HaulType='Dray Export DP', Order=order, Bid=bid, Lid=lid,
                                        Did=did, Company2='Global Business Link', Location=None, BOL=None, Booking=b,
                                        Container=None, Driver=None, Pickup=None, Delivery=None, Amount='370.00',
                                        Date=pulldate, Time=None, Time3=None, Date2=indate, Time2=None, PaidInvoice=None,
@@ -396,7 +406,7 @@ if 1==1:
                                        Dropblock3=None, Date3=pulldate, Location3=None, InvoDate=None, PaidDate=None,
                                        PaidAmt=None, PayRef=None, PayMeth=None, PayAcct=None, BalDue=None, Payments=None, Quote=None,
                                        Date4=None,Date5=None,Date6=None,RateCon=None,Rcache=0,Proof2=None,Pcache2=0,Emailjp=None,
-                                       Emailoa=None,Emailap=None,Saljp=None,Saloa=None,Salap=None,Date7=None,SSCO=None)
+                                       Emailoa=None,Emailap=None,Saljp=None,Saloa=None,Salap=None,Date7=None,SSCO=None,Date8=indate,Ship=None,Voyage=None)
 
 
                         db.session.add(input)
