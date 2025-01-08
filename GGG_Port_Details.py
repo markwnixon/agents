@@ -26,17 +26,17 @@ from utils import hasinput
 try:
     scac = sys.argv[1]
     nt = 'remote'
-    print(f'Received input argument of SCAC: {scac}')
+    #print(f'Received input argument of SCAC: {scac}')
 except:
-    print('Must have a SCAC code argument or will get from setup file')
-    print('Setting SCAC to FELA since none provided')
+    #print('Must have a SCAC code argument or will get from setup file')
+    #print('Setting SCAC to FELA since none provided')
     scac = 'fela'
     nt = 'remote'
 
 scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
-    print(f'Running GGG_Ship_Schedule for {scac} in tunnel mode: {nt}')
+    print(f'Running GGG_Port_Details for {scac} in tunnel mode: {nt}')
 
     host_name = socket.gethostname()
     print("Host Name:", host_name)
@@ -57,7 +57,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
 
 else:
     scac = 'nogo'
-    print('The argument must be FELA or OSLM or NEVO')
+    #print('The argument must be FELA or OSLM or NEVO')
     quit()
 
 
@@ -69,7 +69,7 @@ mins = int(tnow)
 today = runat.date()
 print(' ')
 print('_______________________________________________________')
-print(f'This sequence run date: {today}')
+print(f'This sequence run date: {runat}')
 print('_______________________________________________________')
 print(' ')
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
@@ -247,7 +247,7 @@ def order_update_import(ord,jo,verified,ssco):
                 if arrival is not None: arrival = arrival.strip()
                 if arrival is None: arrival = ship.EstArrival
                 arrival = arrival.split(' ', 1)[0]
-                print(f'Converting arrival date time ::{arrival}:: for vessel {vessel}')
+                #print(f'Converting arrival date time ::{arrival}:: for vessel {vessel}')
                 arrival = datetime.strptime(arrival, "%m/%d/%Y")
                 arrival = arrival.date()
                 avail_at_port = next_business_day(arrival, 1)
@@ -257,13 +257,13 @@ def order_update_import(ord,jo,verified,ssco):
                 if lfd == '' or lfd == 'NOF':
                     lfd = next_business_day(avail_at_port, 3)
                 else:
-                    print(f'Converting lfd date time ::{lfd}::')
+                    #print(f'Converting lfd date time ::{lfd}::')
                     lfd = datetime.strptime(lfd, "%m/%d/%Y")
                     lfd = lfd.date()
                 ord.Date4 = avail_at_port
                 ord.Date5 = lfd
                 ord.Date6 = arrival
-                print(f'Update Order: Date4:{avail_at_port} Date5:{lfd} Date6:{arrival}')
+                #print(f'Update Order: Date4:{avail_at_port} Date5:{lfd} Date6:{arrival}')
                 planned_gate_out = ord.Date
                 planned_delivery = ord.Date3
                 planned_return = ord.Date2
@@ -334,18 +334,18 @@ def order_update_export(ord,jo):
         else:
             if erd != 'NOF':
                 erd = erd.split(' ', 1)[0]
-                print(f'Converting erd date time ::{erd}::')
+                #print(f'Converting erd date time ::{erd}::')
                 erd = datetime.strptime(erd, "%m/%d/%Y")
                 erd = erd.date()
                 ord.Date4 = erd
-                print(f'Updated Order: Date4:{erd}')
+                #print(f'Updated Order: Date4:{erd}')
             if cut != 'NOF':
                 cut = cut.split(' ', 1)[0]
-                print(f'Converting cut date time ::{cut}::')
+                #print(f'Converting cut date time ::{cut}::')
                 cut = datetime.strptime(cut, "%m/%d/%Y")
                 cut = cut.date()
                 ord.Date5 = cut
-                print(f'Updated Order: Date5:{cut}')
+                #print(f'Updated Order: Date5:{cut}')
 
             ord.Status = 'AOK'
             ord.SSCO = ssco
@@ -360,7 +360,7 @@ def order_update_export(ord,jo):
             else: arrival = ''
             if arrival == '': arrival = ship.EstArrival
             arrival = arrival.split(' ', 1)[0]
-            print(f'Converting arrival date time ::{arrival}::')
+            #print(f'Converting arrival date time ::{arrival}::')
             arrival = datetime.strptime(arrival, "%m/%d/%Y")
             #arrival = datetime.strptime(arrival, "%m/%d/%Y %H:%M")
             arrival = arrival.date()
@@ -369,7 +369,7 @@ def order_update_export(ord,jo):
             ord.Voyage = voyage
             ord.Status = 'VER'
             db.session.commit()
-            print(f'Updated Order Date6:{arrival}')
+            #print(f'Updated Order Date6:{arrival}')
         else:
             ord.Ship = vessel
             ord.Voyage = voyage
@@ -398,7 +398,7 @@ def order_update_export(ord,jo):
         if cut == '' or cut == 'NOF': cut = 'NOF'
         if erd != 'NOF':
             erd = erd.split(' ', 1)[0]
-            print(f'Converting erd date time ::{erd}::')
+            #print(f'Converting erd date time ::{erd}::')
             erd = datetime.strptime(erd, "%m/%d/%Y")
             erd = erd.date()
             ord.Date4 = erd
@@ -406,7 +406,7 @@ def order_update_export(ord,jo):
                 if olderd != erd: print(f'****Alert*** the ERD has shifted from {olderd} to {erd}')
         if cut != 'NOF':
             cut = cut.split(' ', 1)[0]
-            print(f'Converting cut date time ::{cut}::')
+            #print(f'Converting cut date time ::{cut}::')
             cut = datetime.strptime(cut, "%m/%d/%Y")
             cut = cut.date()
             ord.Date5 = cut
@@ -474,7 +474,13 @@ if good_con == 8:
                 tdate = imp.Date3
                 status = imp.Status
                 ssco = imp.SSCO
-                print(f'Getting data for JO {jo} import container {container} that has date of {tdate} has ssco :{ssco}:')
+                ship = imp.Ship
+                voyage = imp.Voyage
+                if not hasinput(ssco) or not hasinput(ship) or not hasinput(voyage):
+                    order_needs_update = True
+                else:
+                    order_needs_update = False
+                print(f'Getting data for Import JO {jo} container {container} that has date of {tdate} has ssco :{ssco}:')
                 url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=containerByContainer&numbers={container}'
                 browser.get(url)
                 #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
@@ -483,7 +489,7 @@ if good_con == 8:
                 failed = softwait_id(browser, this_id)
                 if not failed:
                     con_data = get_container_data(2, 14)
-                    print(con_data)
+                    #print(con_data)
                     idat = Imports.query.filter((Imports.Container == container) & (Imports.Active == 1)).order_by(Imports.id.desc()).first()
 
                     if idat is None:
@@ -493,7 +499,7 @@ if good_con == 8:
                         ssfile = addpath3(f'{scac}/{ssfilebase}')
                         browser.get_screenshot_as_file(ssfile)
                         copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                        print('copyline=', copyline)
+                        #print('copyline=', copyline)
                         os.system(copyline)
                         verified, ssco = check_BOL(browser, BOL)
                         import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
@@ -504,7 +510,10 @@ if good_con == 8:
 
 
                     else:
-                        # The job is in the import database yet, and has a successful find in the port data
+                        # The job is in the import database so all the ship parameters are available
+                        if order_needs_update:
+                            imp.Ship = idat.Vessel
+                            imp.Voyage = idat.Voyage
                         # See if an update is required:
                         update_needed = import_update_check(BOL, idat, con_data)
                         if update_needed:
@@ -513,13 +522,13 @@ if good_con == 8:
                             ssfile = addpath3(f'{scac}/{ssfilebase}')
                             browser.get_screenshot_as_file(ssfile)
                             copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                            print('copyline=', copyline)
+                            #print('copyline=', copyline)
                             os.system(copyline)
                             verified, ssco = check_BOL(browser, BOL)
                             import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
                         elif status == 'SNF' or not hasinput(ssco):
                             verified, ssco = check_BOL(browser, BOL)
-                            print(f'For SNF block: {verified}, {ssco}')
+                            #print(f'For SNF block: {verified}, {ssco}')
                         else:
                             verified = 0
                         order_update_import(imp, jo, verified, ssco)
@@ -579,9 +588,9 @@ if good_con == 8:
                 failed = softwait_xpath(browser, vessel_xpath)
                 if not failed:
                     vs_data = get_vessel_data(1, 11)
-                    print(vs_data)
+                    #print(vs_data)
                     bk_data = get_booking_data(1,6)
-                    print(bk_data)
+                    #print(bk_data)
 
                     edat = Exports.query.filter((Exports.Booking == booking) & (Exports.Jo == jo) & (Exports.Active == 1)).order_by(Exports.id.desc()).first()
 
@@ -591,7 +600,7 @@ if good_con == 8:
                         ssfile = addpath3(f'{scac}/{ssfilebase}')
                         browser.get_screenshot_as_file(ssfile)
                         copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                        print('copyline=', copyline)
+                        #print('copyline=', copyline)
                         os.system(copyline)
                         export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
                         order_update_export(exp, jo)
@@ -604,7 +613,7 @@ if good_con == 8:
                             ssfile = addpath3(f'{scac}/{ssfilebase}')
                             browser.get_screenshot_as_file(ssfile)
                             copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                            print('copyline=', copyline)
+                            #print('copyline=', copyline)
                             os.system(copyline)
                             export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
                         order_update_export(exp, jo)
