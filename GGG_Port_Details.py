@@ -417,39 +417,6 @@ def order_update_export(ord,jo):
     return
 
 
-def con_check(con_len, order_con_type):
-    print(f'The container size check is: {con_len}, {order_con_type}')
-
-    if '40' in con_len:
-        if '40' in order_con_type:
-            print(f'The container size check  for 40s good: {con_len}, {order_con_type}')
-        elif '20' in order_con_type:
-            print(f'The container size check  for 40s bad order has a 20: {con_len}, {order_con_type}')
-        elif '45' in order_con_type:
-            print(f'The container size check  for 40s bad order has a 45: {con_len}, {order_con_type}')
-        else:
-            print(f'The container size check  for 40s bad unknown why: {con_len}, {order_con_type}')
-    if '20' in con_len:
-        if '20' in order_con_type:
-            print(f'The container size check  for 20s good: {con_len}, {order_con_type}')
-        elif '40' in order_con_type:
-            print(f'The container size check  for 20s bad order has a 40: {con_len}, {order_con_type}')
-        elif '45' in order_con_type:
-            print(f'The container size check  for 20s bad order has a 45: {con_len}, {order_con_type}')
-        else:
-            print(f'The container size check  for 20s bad unknown why: {con_len}, {order_con_type}')
-    if '45' in con_len:
-        if '45' in order_con_type:
-            print(f'The container size check  for 45s good: {con_len}, {order_con_type}')
-        elif '40' in order_con_type:
-            print(f'The container size check  for 45s bad order has a 40: {con_len}, {order_con_type}')
-        elif '20' in order_con_type:
-            print(f'The container size check  for 45s bad order has a 20: {con_len}, {order_con_type}')
-        else:
-            print(f'The container size check  for 45s bad unknown why: {con_len}, {order_con_type}')
-
-
-
 ############################################################################################################################################
 #IMPORTS Section to check on containers that have not been pulled yet
 #############################################################################################################################################
@@ -504,10 +471,6 @@ if good_con == 8:
                         verified, ssco = check_BOL(browser, BOL)
                         import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
                         order_update_import(imp,jo,verified,ssco)
-                        con_len = con_data[13]
-                        order_con_type = imp.Type
-                        con_check(con_len, order_con_type)
-
 
                     else:
                         # The job is in the import database so all the ship parameters are available
@@ -532,6 +495,15 @@ if good_con == 8:
                         else:
                             verified = 0
                         order_update_import(imp, jo, verified, ssco)
+
+                    # Check container size and type
+                    con_type = idat.Size
+                    con_type = con_type.replace(' / ', ' ')
+                    order_con_type = imp.Type
+                    if con_type != order_con_type:
+                        imp.Type = con_type
+                        db.session.commit()
+                        print(f'***Container size changed from {order_con_type} to {con_type}***')
 
 
                 else:
@@ -619,10 +591,13 @@ if good_con == 8:
                         order_update_export(exp, jo)
                         #if status == 'SNF': order_update_export(exp, jo)
 
-                    con_len = bk_data[1]
+                    # Check container size and type
+                    con_type = f'{bk_data[1]} {bk_data[2]} {bk_data[3]}'
                     order_con_type = exp.Type
-                    con_check(con_len, order_con_type)
-
+                    if con_type != order_con_type:
+                        exp.Type = con_type
+                        db.session.commit()
+                        print(f'***Container size changed from {order_con_type} to {con_type}***')
 
                 else:
                     print(f'Failed to find export booking {booking}')
