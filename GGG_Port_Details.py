@@ -88,7 +88,7 @@ def softwait_id(browser, this_id):
         failed = 0
     except:
         failed = 1
-        print(f'Soft wait timed out')
+        #print(f'Soft wait timed out')
     return failed
 
 def softwait_xpath(browser, xpath):
@@ -421,13 +421,14 @@ def order_update_export(ord,jo):
 #IMPORTS Section to check on containers that have not been pulled yet
 #############################################################################################################################################
 good_con = 0
-while good_con < 4:
+while good_con < 6:
     try:
         imports = Orders.query.filter(Orders.HaulType.contains('Import') & (Orders.Hstat < 2) & (Orders.Date3 > lbdate)).all()
         good_con = 8
     except:
         good_con += 1
         print(f'Connection try again number {good_con}')
+        time.sleep(1)
 
 if good_con == 8:
     with Display():
@@ -472,6 +473,11 @@ if good_con == 8:
                         import_add(jo, BOL, con_data, update_version, verified, ssfilebase)
                         order_update_import(imp,jo,verified,ssco)
 
+                        #This spliced out to check container size data even on first iteration
+                        con_type = con_data[13]
+                        con_type = con_type.replace(' / ', ' ')
+
+
                     else:
                         # The job is in the import database so all the ship parameters are available
                         if order_needs_update:
@@ -496,9 +502,11 @@ if good_con == 8:
                             verified = 0
                         order_update_import(imp, jo, verified, ssco)
 
+                        con_type = idat.Size
+                        con_type = con_type.replace(' / ', ' ')
+
                     # Check container size and type
-                    con_type = idat.Size
-                    con_type = con_type.replace(' / ', ' ')
+
                     order_con_type = imp.Type
                     if con_type != order_con_type:
                         imp.Type = con_type
@@ -525,62 +533,51 @@ if good_con == 8:
     #EXPORTS Section to check on bookings that have not been pulled or returned
     #############################################################################################################################################
     good_con = 0
-    while good_con < 4:
+    while good_con < 6:
         try:
             exports = Orders.query.filter(Orders.HaulType.contains('Export') & (Orders.Hstat < 2) & (Orders.Date3 > lbdate)).all()
-            good_con = 5
+            good_con = 8
         except:
             good_con += 1
             print(f'Connection try again number {good_con}')
+            time.sleep(1)
 
-    with Display():
-        with webdriver.Firefox() as browser:
-            #browser = webdriver.Firefox()
-            browser.maximize_window()
-            for exp in exports:
-                jo = exp.Jo
-                status = exp.Status
-                booking = exp.Booking
-                booking = booking.split('-', 1)[0]
-                tdate = exp.Date3
-                print(f'Getting data for export booking {booking} for date {tdate}')
-                url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=bookingInquiry&numbers={booking}'
-                browser.get(url)
-                #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
-                #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]'
-                this_id = "inquiries-booking-table"
-                softwait_id(browser, this_id)
-                print(f'Completed soft wait for export booking {booking}')
-                #selectElem = browser.find_element_by_xpath('//*[@id="inquiries-booking-table"]/tbody/tr/td[1]/button/div/span')
-                #selectElem.click()
-                #vessel_xpath = '/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
-                #vessel_xpath = '//*[@id="inquiries-booking-vessel-info-table - 0}"]/tbody/tr/td[1]'
-                vessel_xpath = '/html/body/div[5]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
+    if good_con == 8:
+        with Display():
+            with webdriver.Firefox() as browser:
+                #browser = webdriver.Firefox()
+                browser.maximize_window()
+                for exp in exports:
+                    jo = exp.Jo
+                    status = exp.Status
+                    booking = exp.Booking
+                    booking = booking.split('-', 1)[0]
+                    tdate = exp.Date3
+                    print(f'Getting data for export booking {booking} for date {tdate}')
+                    url = f'https://www.portsamerica.com/resources/inquiries?location=SGT_BAL&option=bookingInquiry&numbers={booking}'
+                    browser.get(url)
+                    #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]/div/div[1]/div[4]/button[1]/span/span'
+                    #xpath = '//*[@id="mantine-m2hfnicq9-panel-container"]'
+                    this_id = "inquiries-booking-table"
+                    softwait_id(browser, this_id)
+                    #print(f'Completed soft wait for export booking {booking}')
+                    #selectElem = browser.find_element_by_xpath('//*[@id="inquiries-booking-table"]/tbody/tr/td[1]/button/div/span')
+                    #selectElem.click()
+                    #vessel_xpath = '/html/body/div[1]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
+                    #vessel_xpath = '//*[@id="inquiries-booking-vessel-info-table - 0}"]/tbody/tr/td[1]'
+                    vessel_xpath = '/html/body/div[5]/div/div/div[2]/main/div[1]/section/div/div[2]/div/div[4]/div/div[3]/div/div/table/tbody/tr[2]/td/div[1]/div[2]/div/table/tbody/tr/td[1]'
 
-                failed = softwait_xpath(browser, vessel_xpath)
-                if not failed:
-                    vs_data = get_vessel_data(1, 11)
-                    #print(vs_data)
-                    bk_data = get_booking_data(1,6)
-                    #print(bk_data)
+                    failed = softwait_xpath(browser, vessel_xpath)
+                    if not failed:
+                        vs_data = get_vessel_data(1, 11)
+                        #print(vs_data)
+                        bk_data = get_booking_data(1,6)
+                        #print(bk_data)
 
-                    edat = Exports.query.filter((Exports.Booking == booking) & (Exports.Jo == jo) & (Exports.Active == 1)).order_by(Exports.id.desc()).first()
+                        edat = Exports.query.filter((Exports.Booking == booking) & (Exports.Jo == jo) & (Exports.Active == 1)).order_by(Exports.id.desc()).first()
 
-                    if edat is None:
-                        update_version = 1
-                        ssfilebase = f'{booking}_{today}.png'
-                        ssfile = addpath3(f'{scac}/{ssfilebase}')
-                        browser.get_screenshot_as_file(ssfile)
-                        copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
-                        #print('copyline=', copyline)
-                        os.system(copyline)
-                        export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
-                        order_update_export(exp, jo)
-
-                    else:
-                        update_needed = export_update_check(edat, vs_data, bk_data)
-                        if update_needed:
-                            update_version = edat.Update + 1
+                        if edat is None:
+                            update_version = 1
                             ssfilebase = f'{booking}_{today}.png'
                             ssfile = addpath3(f'{scac}/{ssfilebase}')
                             browser.get_screenshot_as_file(ssfile)
@@ -588,32 +585,45 @@ if good_con == 8:
                             #print('copyline=', copyline)
                             os.system(copyline)
                             export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
-                        order_update_export(exp, jo)
-                        #if status == 'SNF': order_update_export(exp, jo)
+                            order_update_export(exp, jo)
 
-                    # Check container size and type
-                    con_type = f'{bk_data[1]} {bk_data[2]} {bk_data[3]}'
-                    order_con_type = exp.Type
-                    if con_type != order_con_type:
-                        exp.Type = con_type
-                        db.session.commit()
-                        print(f'***Container size changed from {order_con_type} to {con_type}***')
+                        else:
+                            update_needed = export_update_check(edat, vs_data, bk_data)
+                            if update_needed:
+                                update_version = edat.Update + 1
+                                ssfilebase = f'{booking}_{today}.png'
+                                ssfile = addpath3(f'{scac}/{ssfilebase}')
+                                browser.get_screenshot_as_file(ssfile)
+                                copyline = f'scp {ssfile} {websites["ssh_data"] + "vPort"}'
+                                #print('copyline=', copyline)
+                                os.system(copyline)
+                                export_add(jo, booking, vs_data, bk_data, update_version, ssfilebase)
+                            order_update_export(exp, jo)
+                            #if status == 'SNF': order_update_export(exp, jo)
 
-                else:
-                    print(f'Failed to find export booking {booking}')
-                    # The booking is not yet of file at port
-                    # See if already in the export database:
-                    checkexp = Exports.query.filter(Exports.Jo == jo).first()
-                    if checkexp is None:
-                        export_add_temp(jo, booking)
+                        # Check container size and type
+                        con_type = f'{bk_data[1]} {bk_data[2]} {bk_data[3]}'
+                        order_con_type = exp.Type
+                        if con_type != order_con_type:
+                            exp.Type = con_type
+                            db.session.commit()
+                            print(f'***Container size changed from {order_con_type} to {con_type}***')
+
                     else:
-                        checkexp.Verified = 0
+                        print(f'Failed to find export booking {booking}')
+                        # The booking is not yet of file at port
+                        # See if already in the export database:
+                        checkexp = Exports.query.filter(Exports.Jo == jo).first()
+                        if checkexp is None:
+                            export_add_temp(jo, booking)
+                        else:
+                            checkexp.Verified = 0
+                            db.session.commit()
                         db.session.commit()
-                    db.session.commit()
-                    # Report the booking not on file yet
-            #############################################################################################################################################
+                        # Report the booking not on file yet
+                #############################################################################################################################################
 
-            browser.quit()
+        browser.quit()
 
     # Now clear up the import and export database for runs that have been completed..make them inactive 5 days after completion.
     importx = Orders.query.filter(Orders.HaulType.contains('Import') & (Orders.Hstat > 1) & (Orders.Date3 > lbdate)).all()

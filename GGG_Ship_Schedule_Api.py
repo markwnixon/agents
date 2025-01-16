@@ -59,16 +59,21 @@ runat = datetime.now()
 tnow = runat.strftime("%M")
 mins = int(tnow)
 today = runat.date()
+port_start = today - timedelta(days=14)
+ps = port_start.strftime("%m/%d/%Y")
+port_end = today + timedelta(days=45)
+pe = port_end.strftime("%m/%d/%Y")
 print(' ')
 print('_______________________________________________________')
 print(f'This sequence run date: {today}')
+print(f'Port date range from: {ps} to {pe}')
 print('_______________________________________________________')
 print(' ')
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
 
 conyes = 0
 contrys = 0
-print(f'Attempting to connect to database and table Imports....')
+#print(f'Attempting to connect to database and table Imports....')
 while contrys < 4 and conyes == 0:
     try:
         imports = Imports.query.filter(Imports.Active==1).all()
@@ -102,8 +107,8 @@ if imports is not None:
             uships.append(vessel)
             unames.append(f'{vessel}={voyage}')
 
-print(f'Found {uships} unique and active Import Vessels')
-print(f'Found {unames} unique and active Import Vessels')
+#print(f'Found {uships} unique and active Import Vessels')
+#print(f'Found {unames} unique and active Import Vessels')
 exports = Exports.query.filter(Exports.Active==1).all()
 if exports is not None:
     for exp in exports:
@@ -112,10 +117,10 @@ if exports is not None:
             voyage = exp.Voyage.strip()
             vships.append(vessel)
             vnames.append(f'{vessel}={voyage}')
-print(f'Found {vships} unique and active Export Vessels')
-print(f'Found {vnames} unique and active Export Vessels')
+#print(f'Found {vships} unique and active Export Vessels')
+#print(f'Found {vnames} unique and active Export Vessels')
 ship_names_unique = list(set(unames+vnames))
-print(f'Found {ship_names_unique} unique and active Combined Vessels')
+#print(f'Found {ship_names_unique} unique and active Combined Vessels')
 
 # Start the api capture of ships...
 def get_access_token(username, password, server):
@@ -170,8 +175,8 @@ if apigo:
     password = 'xKZyMJnR'
 
     access_token, access_username = get_access_token(username, password, server1)
-    print('Access Token:', access_token)
-    print('Access Username:', access_username)
+    #print('Access Token:', access_token)
+    #print('Access Username:', access_username)
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json',
@@ -180,8 +185,8 @@ if apigo:
 
 
     data = {
-        "startDate": "12/01/2024",
-        "endDate": "01/31/2025"
+        "startDate": ps,
+        "endDate": pe
     }
     keyret, valret = get_vessel_schedule(server2, headers, data)
     print('##########################################')
