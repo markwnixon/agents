@@ -1598,7 +1598,6 @@ class Drivers(db.Model):
     Phone = db.Column('Phone', db.String(25))
     Email = db.Column('Email', db.String(50))
     Truck = db.Column('Truck', db.String(9))
-    Tag = db.Column('Tag', db.String(9))
     ScanCDL = db.Column('ScanCDL', db.String(50))
     ScanMed = db.Column('ScanMed', db.String(50))
     ScanMVR = db.Column('ScanMVR', db.String(50))
@@ -1621,7 +1620,7 @@ class Drivers(db.Model):
     Carrier = db.Column('Carrier', db.String(45))
 
 
-    def __init__(self, Name, Addr1, Addr2, Phone, Email, Truck, Tag, ScanCDL, ScanMed, ScanMVR, ScanTwic, JobStart,
+    def __init__(self, Name, Addr1, Addr2, Phone, Email, Truck, ScanCDL, ScanMed, ScanMVR, ScanTwic, JobStart,
                  JobEnd, Tagid, Pin, CDLnum, CDLstate, CDLissue, CDLexpire, DOB, MedExpire, TwicExpire, TwicNum,
                  PreScreen, LastTested, Active, Carrier):
         self.Name = Name
@@ -1630,7 +1629,6 @@ class Drivers(db.Model):
         self.Phone = Phone
         self.Email = Email
         self.Truck = Truck
-        self.Tag = Tag
         self.ScanCDL = ScanCDL
         self.ScanMed = ScanMed
         self.ScanMVR = ScanMVR

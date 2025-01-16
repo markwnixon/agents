@@ -98,6 +98,7 @@ def get_driver(movetyp,finder):
             return pdat.Driver
     return driver
 
+
 def softwait(browser, xpath):
     print('made it to softwait')
     closebutx = "//*[contains(@type,'button')]"
@@ -151,6 +152,15 @@ def blendticks(gfile1,gfile2,outfile):
     with open(outfile, "wb") as out_f:
         output.write(out_f)
 
+def wait_for_file(filename, timeout=30):
+    """Waits for a file to be created, with a timeout."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if os.path.exists(filename):
+            return True
+        time.sleep(1)
+    return False
+
 def make_blended(odat,ingate,outgate):
     # Make blended tickets for this matched container
     con = odat.Container
@@ -160,7 +170,7 @@ def make_blended(odat,ingate,outgate):
     pdf2 = outgate.Source
     test = 0
     if con in pdf1 and con in pdf2 and 'OUT' in pdf1 and ('IN' in pdf2 or 'Source' in pdf2): test = 1
-    print(f'For order {jo} we have container {con} and pdf files {pdf1} and {pdf2} and test is {test}')
+    print(f'In make_blended for order {jo} we have container {con} and pdf files {pdf1} and {pdf2} and test is {test}')
     if test == 1:
         blendfile = f'{con}_Blended.pdf'
         scp_path = f'{websites["ssh_data"] + "vGate/"}'
@@ -168,6 +178,10 @@ def make_blended(odat,ingate,outgate):
         tempfile = addpath3(f'{scac}/{blendfile}')
         tempfile1 = addpath3(f'{scac}/{pdf1}')
         tempfile2 = addpath3(f'{scac}/{pdf2}')
+
+        #Check to see if we have a local copy.  May need to get from remote if running this script multiple locations
+        #if not os.path.isfile(tempfile1): tempfile1 = check_remote(tempfile1)
+        #if not os.path.isfile(tempfile2): tempfile2 = check_remote(tempfile2)
 
         scpcom = f'scp {scpfile} {tempfile}'
         scpcom1 = f'scp {scp_path}{pdf1} {tempfile1}'
@@ -178,12 +192,15 @@ def make_blended(odat,ingate,outgate):
         try:
             os.system(scpcom)
         except:
-            print('File does not exist')
+            print('The blended_file does not exist')
         try:
             os.system(scpcom1)
+        except:
+            print(f'Could not get file {pdf1} from remote site')
+        try:
             os.system(scpcom2)
         except:
-            print('Files do not exist')
+            print(f'Could not get file {pdf2} from remote site')
 
         if os.path.isfile(tempfile):
             print(f'{blendfile} exists already')
@@ -194,12 +211,15 @@ def make_blended(odat,ingate,outgate):
             os.remove(tempfile)
         elif os.path.isfile(tempfile1) and os.path.isfile(tempfile2):
             print(f'Have the temp files needed to make blended and will place in database if successful')
-            # g1 = f'static/{scac}/data/vGate/{pdf1}'
-            # g2 = f'static/{scac}/data/vGate/{pdf2}'
             blendticks(tempfile1, tempfile2, tempfile)
             odat.Gate = f'{con}_Blended.pdf'
             db.session.commit()
-            time.sleep(3) #make sure the file has time to be created
+
+            if wait_for_file(tempfile):
+                print(f"{tempfile} has been created.")
+            else:
+                print(f"Timeout waiting for {tempfile}.")
+
             if os.path.isfile(tempfile):
                 copyline = f'scp {tempfile} {websites["ssh_data"] + "vGate"}'
                 print('copyline=', copyline)
@@ -210,8 +230,8 @@ def make_blended(odat,ingate,outgate):
             else:
                 print('The blended file was not created successfully')
         else:
-            if not os.path.isfile(tempfile1): print(f'Do not have file {tempfile1}')
-            if not os.path.isfile(tempfile2): print(f'Do not have file {tempfile2}')
+            if not os.path.isfile(tempfile1): print(f'Do not have tempfile1:{tempfile1}')
+            if not os.path.isfile(tempfile2): print(f'Do not have tempfile2:{tempfile2}')
 
 
 def update_records(thiscon, id):
