@@ -204,12 +204,11 @@ def make_blended(odat,ingate,outgate):
 
         if os.path.isfile(tempfile):
             print(f'{blendfile} exists already')
+            print(f'Remaking {blendfile}')
             odat.Gate = f'{con}_Blended.pdf'
             db.session.commit()
-            os.remove(tempfile1)
-            os.remove(tempfile2)
-            os.remove(tempfile)
-        elif os.path.isfile(tempfile1) and os.path.isfile(tempfile2):
+
+        if os.path.isfile(tempfile1) and os.path.isfile(tempfile2):
             print(f'Have the temp files needed to make blended and will place in database if successful')
             blendticks(tempfile1, tempfile2, tempfile)
             odat.Gate = f'{con}_Blended.pdf'
