@@ -152,7 +152,7 @@ def blendticks(gfile1,gfile2,outfile):
     with open(outfile, "wb") as out_f:
         output.write(out_f)
 
-def wait_for_file(filename, timeout=30):
+def wait_for_file(filename, timeout=45):
     """Waits for a file to be created, with a timeout."""
     start_time = time.time()
     while time.time() - start_time < timeout:
