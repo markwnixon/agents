@@ -636,9 +636,9 @@ def gatescraper(printif, dayback):
 
                             db.session.commit()
 
-                            print('Now updating records')
-                            retval = update_records(thiscon, idat.id)
-                            print(f'The return value is {retval}')
+                            #print('Now updating records')
+                            #retval = update_records(thiscon, idat.id)
+                            #print(f'The return value is {retval}')
 
                             #print(f'con_data:{con_data}')
                             print(f'outpath is: {outpath}')
@@ -650,9 +650,14 @@ def gatescraper(printif, dayback):
 
                             #newfile = moveticks(newfile)
                             copyline = f'scp {newfile} {websites["ssh_data"]+"vGate"}'
-                            print('copyline=',copyline)
+                            print('uploading the gate ticket copyline=',copyline)
                             os.system(copyline)
                             #os.remove(newfile)
+
+                            # Need the current tickets to be copied up to remote site before can update the records
+                            print('Now updating records')
+                            retval = update_records(thiscon, idat.id)
+                            print(f'The return value is {retval}')
 
 
                         else:
