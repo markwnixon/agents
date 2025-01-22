@@ -178,6 +178,9 @@ def make_blended(odat,ingate,outgate):
         tempfile = addpath3(f'{scac}/{blendfile}')
         tempfile1 = addpath3(f'{scac}/{pdf1}')
         tempfile2 = addpath3(f'{scac}/{pdf2}')
+        print(f'scac is {scac} and pdf1 is {pdf1} and pdf2 is {pdf2}')
+        print(f'********tempfile1 is {tempfile1}')
+        print(f'********tempfile2 is {tempfile2}')
 
         #Check to see if we have a local copy.  May need to get from remote if running this script multiple locations
         #if not os.path.isfile(tempfile1): tempfile1 = check_remote(tempfile1)
@@ -186,6 +189,7 @@ def make_blended(odat,ingate,outgate):
         scpcom = f'scp {scpfile} {tempfile}'
         scpcom1 = f'scp {scp_path}{pdf1} {tempfile1}'
         scpcom2 = f'scp {scp_path}{pdf2} {tempfile2}'
+
         newdoc = f'static/{scac}/data/vGate/{con}_Blended.pdf'
         print(f'The blended file is: {blendfile}')
 
