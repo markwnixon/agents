@@ -236,6 +236,15 @@ def make_blended(odat,ingate,outgate):
             if not os.path.isfile(tempfile1): print(f'Do not have tempfile1:{tempfile1}')
             if not os.path.isfile(tempfile2): print(f'Do not have tempfile2:{tempfile2}')
 
+def update_release(release, this_release):
+    #Subroutine to update the interchange ticket Release when we have a multibooking situation, but ensure we do not change the base
+    check_release = release.split('-')
+    try:
+        dash_num = check_release[1]
+        modified_release = f'{this_release}-{dash_num}'
+        return modified_release
+    except:
+        return this_release
 
 def update_records(thiscon, id):
     print(f'Updating database records for container {thiscon} and Interchange id {id}')
@@ -262,16 +271,35 @@ def update_records(thiscon, id):
 
         if movetyp == 'Empty Out':
             #This should be an export, container number needs to be created.
-            #However, we could be part of multiple bookings so we need to check on that first
-            edata = Orders.query.filter((Orders.HaulType == 'Dray Export') & (Orders.Booking.contains(release)) & (Orders.Date > lbdate)).all()
+            #However, we could be part of multiple bookings so we need to check on which one this is
+            edata = Orders.query.filter((Orders.HaulType.contains('Export')) & (Orders.Booking.contains(release)) & (Orders.Date > lbdate)).all()
             nbk = len(edata)
+            multibooking = 0
             if nbk > 1:
-                #we need to extract which booking in the sequence we are pulling
-                for ix, edat in enumerate(edata):
-                    release = edat.Booking
-                    container = edat.Container
-                    if not hasinput(container): break
-                # The first order without a container value is used
+                # Check to make sure they all have the same base booking.
+                bk_multibook = []
+                for edat in edata:
+                    tbooking = edat.Booking
+                    tbklist = tbooking.split('-')
+                    tbook = tbklist[0]
+                    if tbook == release:
+                        multibooking += 1
+                        hstat = edat.Hstat
+                        if hstat < 1:
+                            bk_multibook.append(edat.Booking)
+                if multibooking > 1:
+                    # Reorder the multi-book bookings
+                    if bk_multibook != []:
+                        bk_multibook.sort()
+                        first_unpulled_release = bk_multibook[0]
+                        eck = Orders.query.filter((Orders.HaulType.contains('Export')) & (Orders.Booking == first_unpulled_release) & (Orders.Date > lbdate)).first()
+                        if eck is not None:
+                            container = eck.Container
+                            if not hasinput(container):
+                                release = eck.Booking
+                                print(f'The first unpulled booking on multibooking {first_unpulled_release} has no container and will be updated.')
+                            else:
+                                print(f'The first unpulled booking on multibooking {first_unpulled_release} already has a container assigned: {container}')
 
             okat = Orders.query.filter(Orders.Booking == release).order_by(Orders.id.desc()).first()
             driver = get_driver(movetyp, release)
@@ -280,7 +308,10 @@ def update_records(thiscon, id):
                 ikat.Status = 'Out'
                 ikat.Company = okat.Shipper
                 ikat.Driver = driver
-                ikat.Release = release
+                #This is to make sure we do not overwrite the base release of the multibooking
+                if multibooking > 1:
+                    this_release = ikat.Release
+                    ikat.Release = update_release(release, this_release)
                 okat.Container = con
                 okat.ConType = ikat.ConType
                 okat.Chassis = ikat.Chassis
@@ -325,10 +356,8 @@ def update_records(thiscon, id):
                 ikat.Jo = okat.Jo
                 ikat.Company = okat.Shipper
                 ikat.Driver = driver
-                ikat.Release = inbook
                 okat.Chassis = ikat.Chassis
                 okat.Date2 = ikat.Date
-                okat.BOL = inbook
                 okat.Hstat = 2
                 db.session.commit()
             imat = Interchange.query.filter( (Interchange.Container == thiscon) & (Interchange.Type.contains('Out')) & (Interchange.Date > lbdate)).first()
@@ -336,11 +365,7 @@ def update_records(thiscon, id):
                 ikat.Status = 'IO'
                 imat.Status = 'IO'
                 db.session.commit()
-                if 1 == 1:
-                    make_blended(okat,imat,ikat)
-                if 1 == 2:
-                    print('Could not produce blended tickets')
-
+                make_blended(okat,imat,ikat)
             else:
                 print(f'Could not find a match for the load in container {thiscon}')
                 ikat.Status = 'No Out'

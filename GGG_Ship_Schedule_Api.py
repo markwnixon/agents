@@ -112,7 +112,8 @@ if imports is not None:
 exports = Exports.query.filter(Exports.Active==1).all()
 if exports is not None:
     for exp in exports:
-        vessel = exp.Vessel.strip()
+        vessel = exp.Vessel
+        if vessel is not None: vessel = vessel.strip()
         if vessel not in vships and vessel != 'NOF':
             voyage = exp.Voyage.strip()
             vships.append(vessel)
