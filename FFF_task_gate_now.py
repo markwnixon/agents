@@ -336,29 +336,28 @@ def update_records(thiscon, id):
                 ikat.Status = 'IO'
                 imat.Status = 'IO'
                 db.session.commit()
-                if 1 == 1:
-                    make_blended(okat,imat,ikat)
-                if 1 == 2:
-                    print('Could not produce blended tickets')
+                make_blended(okat,imat,ikat)
             else:
                 print(f'Could not find a match for the Empty in container {thiscon}')
                 ikat.Status = 'No Out'
 
         if movetyp == 'Load In':
             #This should be an export return
-            okat = Orders.query.filter(Orders.Container==thiscon).first()
+            okat = Orders.query.filter(Orders.Container == thiscon).order_by(Orders.id.desc()).first()
+            #okat = Orders.query.filter(Orders.Container==thiscon).first()
             driver = get_driver(movetyp, con)
             if okat is not None:
-                inbook = okat.BOL
-                if not hasinput(inbook): inbook = okat.Booking
-                if len(inbook) < 4: inbook = okat.Booking
-                print(f'******************the in booking for {thiscon} with type {movetyp} is **{inbook}*************')
+                #inbook = okat.BOL
+                #if not hasinput(inbook): inbook = okat.Booking
+                #if len(inbook) < 4: inbook = okat.Booking
+                #print(f'******************the in booking for {thiscon} with type {movetyp} is **{inbook}*************')
                 ikat.Jo = okat.Jo
                 ikat.Company = okat.Shipper
                 ikat.Driver = driver
                 okat.Chassis = ikat.Chassis
                 okat.Date2 = ikat.Date
                 okat.Hstat = 2
+                okat.BOL = release
                 db.session.commit()
             imat = Interchange.query.filter( (Interchange.Container == thiscon) & (Interchange.Type.contains('Out')) & (Interchange.Date > lbdate)).first()
             if imat is not None:
