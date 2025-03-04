@@ -699,6 +699,28 @@ class Gledger(db.Model):
         self.Date = Date
         self.Ref = Ref
 
+class PaymentsRec(db.Model):
+    __tablename__ = 'paymentsrec'
+    id = db.Column('id', db.Integer, primary_key=True)
+    Amount = db.Column('Amount', db.Integer)
+    Account = db.Column('Account', db.String(50))
+    Source = db.Column('Source', db.String(50))
+    Type = db.Column('Type',db.String(2))
+    Com = db.Column('Com',db.String(1))
+    Recorded = db.Column('Recorded', db.DateTime)
+    Date = db.Column('Date', db.DateTime)
+    Ref = db.Column('Ref', db.String(45))
+
+    def __init__(self, Amount,Account,Source,Type,Com,Recorded,Date,Ref):  # , dinc, dexp,):
+        self.Amount = Amount
+        self.Account=Account
+        self.Source=Source
+        self.Type=Type
+        self.Com=Com
+        self.Recorded=Recorded
+        self.Date = Date
+        self.Ref = Ref
+
 class Divisions(db.Model):
     __tablename__ = 'divisions'
     id = db.Column('id', db.Integer, primary_key=True)
