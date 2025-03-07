@@ -238,9 +238,9 @@ def order_update_import(ord,jo,verified,ssco):
                 good_for_update = 0
         if good_for_update:
             vessel = impdat.Vessel
-            vessel = vessel.strip()
+            if vessel is not None: vessel = vessel.strip()
             voyage = impdat.Voyage
-            voyage = voyage.strip()
+            if voyage is not None: voyage = voyage.strip()
             ship = Ships.query.filter((Ships.Vessel==vessel) & (Ships.VoyageIn == voyage)).order_by(Ships.id.desc()).first()
             if ship is not None:
                 arrival = ship.ActArrival
@@ -253,7 +253,7 @@ def order_update_import(ord,jo,verified,ssco):
                 avail_at_port = next_business_day(arrival, 1)
 
                 lfd = impdat.LFD
-                lfd = lfd.strip()
+                if lfd is not None: lfd = lfd.strip()
                 if lfd == '' or lfd == 'NOF':
                     lfd = next_business_day(avail_at_port, 3)
                 else:
@@ -312,13 +312,13 @@ def order_update_export(ord,jo):
     if hstat < 1:
         expdat = Exports.query.filter(Exports.Jo == jo).order_by(Exports.id.desc()).first()
         vessel = expdat.Vessel
-        vessel = vessel.strip()
+        if vessel is not None: vessel = vessel.strip()
         voyage = expdat.Voyage
-        voyage = voyage.strip()
+        if voyage is not None: voyage = voyage.strip()
         erd = expdat.GeneralBR
         cut = expdat.GeneralCut
-        erd = erd.strip()
-        cut = cut.strip()
+        if erd is not None: erd = erd.strip()
+        if cut is not None: cut = cut.strip()
         ssco = expdat.SSCO
         if erd == '' or erd == 'NOF': erd = 'NOF'
         if cut == '' or cut == 'NOF': cut = 'NOF'
@@ -385,13 +385,13 @@ def order_update_export(ord,jo):
 
         expdat = Exports.query.filter(Exports.Jo == jo).order_by(Exports.id.desc()).first()
         vessel = expdat.Vessel
-        vessel = vessel.strip()
+        if vessel is not None: vessel = vessel.strip()
         voyage = expdat.Voyage
-        voyage = voyage.strip()
+        if voyage is not None: voyage = voyage.strip()
         erd = expdat.GeneralBR
         cut = expdat.GeneralCut
-        erd = erd.strip()
-        cut = cut.strip()
+        if erd is not None: erd = erd.strip()
+        if cut is not None: cut = cut.strip()
         olderd = ord.Date4
         oldcut = ord.Date5
         if erd == '' or erd == 'NOF': erd = 'NOF'
