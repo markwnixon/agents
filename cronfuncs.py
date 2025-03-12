@@ -248,99 +248,214 @@ def conmatch(addtext, newinterchange):
     return addtext
 
 def Order_Container_Update(oder):
-    odat = Orders.query.get(oder)
-    bk = odat.Booking
-    bol = odat.BOL
-    container = odat.Container
-    try:
-        ht = odat.HaulType
-    except:
-        if bk == bol: ht = 'Import'
-        else: ht = 'Export'
 
-    start_date = odat.Date - timedelta(30)
-    end_date = odat.Date + timedelta(30)
-    pulled = False
-    returned = False
-    jimport = False
-    jexport = False
+    okat = Orders.query.get(oder)
+    bkout = okat.Booking
+    con = okat.Container
+    htype = okat.HaulType
+    lbdate = okat.Date3 - timedelta(120)
+    ntick = 0
+    kdat = None
+    nbk = 1
 
-    if 'Import' in ht and hasinput(container):
-        jimport = True
-        idata = Interchange.query.filter( (Interchange.Date > start_date) & (Interchange.Date < end_date) & (Interchange.Container == container) ).all()
-        for jx,idat in enumerate(idata):
-            type =  idat.Type
-            if 'Out' in type:
-                ao = idat
-                pulled = True
-            if 'In' in type:
-                ai = idat
-                returned = True
-    elif 'Export' in ht and hasinput(bk):
-        jexport = True
-        idata = Interchange.query.filter((Interchange.Date > start_date) & (Interchange.Date < end_date) & (Interchange.Release == bk)).all()
-        for jx,idat in enumerate(idata):
-            type =  idat.Type
-            if 'Out' in type:
-                ao = idat
-                pulled = True
-                bkout = idat.Release
-                # Container may be returned under different booking
-                pulled_container = idat.Container
-                rdat = Interchange.query.filter( (Interchange.Date > start_date) & (Interchange.Date < end_date) & (Interchange.Container == pulled_container) & ( Interchange.Type.contains('In')) ).first()
-                if rdat is not None:
-                    returned = True
-                    ai = rdat
+    #If export check for multiple bookings and control accordingly
+    if 'Export' in htype:
+        #Only run if have a legitimate booking number.
+        if len(bkout) > 5:
+            # Make sure start from the base booking without dashes:
+            if '-' in bkout:
+                bklist = bkout.split('-')
+                bkout = bklist[0]
+                if len(bkout) < 7: bkout = 'NoBook'
+            edata = Orders.query.filter((Orders.HaulType.contains('Export')) & (Orders.Booking.contains(bkout)) & (Orders.Date > lbdate)).all()
+            nbk = len(edata)
+            multibooking = 1
+            if nbk > 1:
+                multibooking = 0
+                #Check to make sure they all have the same base booking.
+                jo_multibook = []
+                for edat in edata:
+                    tbooking = edat.Booking
+                    tbklist = tbooking.split('-')
+                    tbook = tbklist[0]
+                    if tbook == bkout:
+                        multibooking += 1
+                        jo_multibook.append(edat.Jo)
 
-        if not pulled and not returned:
-            #Check to see if missing the IN ticket and need to match the out by booking
-            rdat = Interchange.query.filter((Interchange.Date > start_date) & (Interchange.Date < end_date) & (Interchange.Release == bk) & (Interchange.Type.contains('In'))).first()
-            if rdat is not None:
-                ai = rdat
-                returned = True
+                if multibooking < 2:
+                    jo_multibook = []
+                    multibooking = 0
+                    nbk = 1
 
 
-    print(f'For sid {oder} we have container {container} and pulled is {pulled} and returned is {returned}')
-    if pulled and not returned:
-        odat.Hstat = 1
-        ao.Company = odat.Shipper
-        ao.Jo = odat.Jo
-        odat.Date = ao.Date
-        if odat.Istat == -1: odat.Istat = 0
-        if jexport:
-            odat.Container = ao.Container
-        odat.Chassis = ao.Chassis
-        odat.Type = ao.ConType
-        db.session.commit()
-    if pulled and returned:
-        if not hasinput(ao.Company): ao.Company = odat.Shipper
-        if not hasinput(ao.Jo): ao.Jo = odat.Jo
-        if not hasinput(container): odat.Container = ai.Container
-        if odat.Istat == -1: odat.Istat = 0
-        ai.Company = odat.Shipper
-        ai.Jo = odat.Jo
-        odat.Hstat = 2
-        odat.Date = ao.Date
-        odat.Date2 = ai.Date
-        if not hasinput(odat.Chassis): odat.Chassis = ai.Chassis
-        if not hasinput(odat.Type): odat.Type = ai.ConType
-        db.session.commit()
 
-    if returned and not pulled:
-        if not hasinput(container): odat.Container = ai.Container
-        if odat.Istat == -1: odat.Istat = 0
-        ai.Company = odat.Shipper
-        ai.Jo = odat.Jo
-        odat.Hstat = 2
-        odat.Date2 = ai.Date
-        if not hasinput(odat.Chassis): odat.Chassis = ai.Chassis
-        if not hasinput(odat.Type): odat.Type = ai.ConType
-        db.session.commit()
+                if multibooking > 1:
+                    ix = 1
+                    for edat in edata:
+                        jo = edat.Jo
+                        if jo in jo_multibook:
+                            bklabel = f'{bkout}-{ix}'
+                            edat.Booking = bklabel
+                            ix += 1
+                    db.session.commit()
 
-    if jexport and pulled and returned:
-        if ao.Release != ai.Release:
-            odat.Booking = ai.Release
-            odat.BOL = ao.Release
+                    # Now have to update and relabel the Interchange tickets to match, and make sure the dashes match the orders only if the base bookings match
+                    ix = 1
+                    idata = Interchange.query.filter((Interchange.Release.contains(bkout)) & (Interchange.Date > lbdate) & (Interchange.Type == 'Empty Out')).all()
+                    if idata:
+                        for jx, idat in enumerate(idata):
+                            current_booking = idat.Release
+                            base_nodash = current_booking.split('-')
+                            release_nodash = base_nodash[0]
+                            if bkout == release_nodash:
+                                bklabel = f'{release_nodash}-{ix}'
+                                idat.Release = bklabel
+                                container = idat.Container
+                                mdat = Interchange.query.filter((Interchange.Container == container) & (Interchange.Date > lbdate) & (Interchange.Type == 'Load In')).first()
+                                if mdat is not None:
+                                    mdat_booking = mdat.Release
+                                    mbase_nodash = mdat_booking.split('-')
+                                    mrelease_nodash = mbase_nodash[0]
+                                    if bkout == mrelease_nodash:
+                                        mbklabel = f'{mrelease_nodash}-{ix}'
+                                        mdat.Release = mbklabel
+                                ix += 1
+                        db.session.commit()
+
+                    #Now reset the order using the relabeled bookings that have dashes:
+                    edata = Orders.query.filter((Orders.HaulType.contains('Export')) & (Orders.Booking.contains(bkout)) & (Orders.Date > lbdate)).all()
+                    for edat in edata:
+                        jo = edat.Jo
+                        if jo in jo_multibook:
+                            whole_booking = edat.Booking
+                            jdat = Interchange.query.filter((Interchange.Release == whole_booking) & (Interchange.Date > lbdate) & (Interchange.Type == 'Empty Out')).first()
+                            if jdat is not None:
+                                jo = edat.Jo
+                                shipper = edat.Shipper
+                                jdat.Jo = jo
+                                jdat.Company = shipper
+                                con = jdat.Container
+                                edat.Container = con
+                                edat.Chassis = jdat.Chassis
+                                edat.Hstat = Gate_Match(con, lbdate, multibooking, 'Export', edat)
+                                db.session.commit()
+                            else:
+                                edat.Container = ''
+                                edat.Chassis = ''
+                                edat.Hstat = 0
+                                db.session.commit()
+
+
         else:
-            odat.BOL = ai.Release
-        db.session.commit()
+            err = ['Cannot create or update an export without a booking number']
+
+
+
+    if nbk == 1:
+        if hasinput(con):
+            idata = Interchange.query.filter((Interchange.Container == con) & (Interchange.Date > lbdate)).all()
+            ntick = len(idata)
+        if hasinput(bkout):
+            kdat = Interchange.query.filter((Interchange.Release == bkout) & (Interchange.Type == 'Empty Out') & (Interchange.Date > lbdate)).first()
+
+        #print(f'There are {ntick} interchange tickets based on container search')
+        if ntick == 2:
+            test = 1
+            if 'Out' in idata[0].Type:
+                idat0 = idata[0]
+                idat1 = idata[1]
+            elif 'Out' in idata[1].Type:
+                idat1 = idata[0]
+                idat0 = idata[1]
+            else:
+                test = 0
+                ###print('Failed test of proper pairing')
+            if test:
+                #print(f'{idat0.Type}: {idat0.Release} {idat0.Container}')
+                #print(f'{idat1.Type}: {idat1.Release} {idat1.Container}')
+                # Check to see if pairing completed and this is only Order for that container (in case duplicated)
+                if 'Out' in idat0.Type and 'In' in idat1.Type:
+                    allorders = Orders.query.filter((Orders.Container == con) & (Orders.Date3 > lbdate)).all()
+                    if len(allorders) == 1:
+                        jo = okat.Jo
+                        shipper = okat.Shipper
+                        idat0.Status = 'IO'
+                        idat1.Status = 'IO'
+                        idat0.Jo = jo
+                        idat1.Jo = jo
+                        idat0.Company = shipper
+                        idat1.Company = shipper
+                #If this is an import then the release will not be included in interchange ticket so do not update the order or it will be erased
+                if 'Export' in okat.HaulType:
+                    okat.Booking = idat0.Release
+                    okat.BOL = idat1.Release
+                okat.Chassis = idat0.Chassis
+                okat.ConType = idat0.ConType
+                okat.Date = idat0.Date
+                okat.Date2 = idat1.Date
+                okat.Hstat = 2
+                db.session.commit()
+
+        if ntick == 1:
+            ikat = idata[0]
+            con = ikat.Container
+            release = ikat.Release
+            movetyp = ikat.Type
+            if movetyp == 'Load Out':
+                #This should be an import, container will already be edited input
+                okat.Chassis = ikat.Chassis
+                okat.ConType = ikat.ConType
+                okat.Date = ikat.Date
+                okat.Hstat = 1
+                ikat.Status = 'BBBBBB'
+                db.session.commit()
+            if movetyp == 'Empty Out':
+                okat.Container = con
+                okat.Chassis = ikat.Chassis
+                okat.ConType = ikat.ConType
+                okat.Booking = ikat.Release
+                okat.Date = ikat.Date
+                okat.Hstat = 1
+                ikat.Company = okat.Shipper
+                ikat.Jo = okat.Jo
+                ikat.Status = 'BBBBBB'
+                db.session.commit()
+            if movetyp == 'Empty In':
+                okat.Date2 = ikat.Date
+                okat.Hstat = 2
+                ikat.Status = 'No Load Out'
+                db.session.commit()
+            if movetyp == 'Load In':
+                okat.Date2 = ikat.Date
+                okat.Hstat = 2
+                okat.BOL = ikat.Release
+                ikat.Status = 'No Empty Out'
+                db.session.commit()
+
+        if ntick == 0 and kdat is not None:
+            ###print('Doing the most dangerous update')
+            #If only have no tickets based on container and have an empty out based on booking do that update
+            con = kdat.Container
+            movetyp = kdat.Type
+            ###print(f'Performing update based on interchange empty out give con {con} and movetyp {movetyp}')
+            if movetyp == 'Empty Out':
+                okat.Container = con
+                okat.Chassis = kdat.Chassis
+                okat.ConType = kdat.ConType
+                okat.Date = kdat.Date
+                kdat.Company = okat.Shipper
+                kdat.Jo = okat.Jo
+                if okat.Hstat is None: okat.Hstat = 1
+                elif okat.Hstat < 3: okat.Hstat = 1
+            #And now we have to complete the assignment based on the container number of the first interchange
+                ingate = Interchange.query.filter((Interchange.Container == con) & (Interchange.Type == 'Load In') & (Interchange.Date > lbdate)).first()
+                if ingate is not None:
+                    okat.BOL = ingate.Release
+                    okat.Date2 = ingate.Date
+                    okat.Hstat = 2
+                    ingate.Company = okat.Shipper
+                    ingate.Jo = okat.Jo
+                    ingate.Status = 'IO'
+                    kdat.Status = 'IO'
+                db.session.commit()
+    return

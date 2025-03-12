@@ -47,7 +47,7 @@ else:
     quit()
 
 from utils import hasinput
-from cronfuncs import tunneltest, Order_Container_Update
+from cronfuncs import tunneltest
 
 if nt == 'remote':
     success = tunneltest()
