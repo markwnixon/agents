@@ -443,7 +443,7 @@ for cdat in cdata:
         if bkin == bkout:
             print(f'For container {con} the bookings match out and in')
         else:
-
+            print(f'For container {con} the bookings match out and in do not match')
             if cdat.BOL is None:
                 print(f'For container {con} the in booking set to {bkin}')
                 cdat.BOL = bkin
