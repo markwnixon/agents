@@ -444,11 +444,14 @@ for cdat in cdata:
             print(f'For container {con} the bookings match out and in')
         else:
             print(f'For container {con} the out on {bkout} and in on {bkin}')
-            if bk == bkout:
-                print(f'Need to change Jo {jo} with container {con} from {bk} to {bkin}')
-                cdat.Booking = bkout
+            if cdat.BOL is None:
                 cdat.BOL = bkin
                 db.session.commit()
+            else:
+                if cdat.Booking != bkout or cdat.BOL != bkin:
+                    cdat.Booking = bkout
+                    cdat.BOL = bkin
+                    db.session.commit()
 
 
 
