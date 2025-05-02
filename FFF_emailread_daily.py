@@ -443,12 +443,14 @@ for cdat in cdata:
         if bkin == bkout:
             print(f'For container {con} the bookings match out and in')
         else:
-            print(f'For container {con} the out on {bkout} and in on {bkin}')
+
             if cdat.BOL is None:
+                print(f'For container {con} the in booking set to {bkin}')
                 cdat.BOL = bkin
                 db.session.commit()
             else:
                 if cdat.Booking != bkout or cdat.BOL != bkin:
+                    print(f'For container {con} the out on {bkout} and in on {bkin}')
                     cdat.Booking = bkout
                     cdat.BOL = bkin
                     db.session.commit()
