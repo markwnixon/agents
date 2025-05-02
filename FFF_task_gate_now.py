@@ -431,7 +431,7 @@ def gatescraper(printif, dayback):
     yesterday = datetime.strftime(datetime.now() - timedelta(dayback), '%m/%d/%Y')
     todaystr = datetime.strftime(datetime.now() - timedelta(dayback), '%m/%d/%Y')
     today = datetime.today()
-    cutoff = datetime.now() - timedelta(30)
+    cutoff = datetime.now() - timedelta(45)
     cutoff = cutoff.date()
     #todaystr = datetime.today().strftime('%m/%d/%Y')
     startdate = yesterday

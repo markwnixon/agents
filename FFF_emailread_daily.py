@@ -156,7 +156,7 @@ def datename(data):
             part = response_part[1].decode('utf-8')
             msg = email.message_from_string(part)
             date=msg['Date']
-            print(date)
+            #print(date)
             date=date.split('-',1)[0]
             date=date.split('+',1)[0]
             date=date.strip()
@@ -207,10 +207,10 @@ def checkdate(emaildate,filename,txtfile):
                     datedt=datetime.datetime.strptime(date, '%Y-%m-%d')
                     datedt=datedt.date()
                     if datedt<emaildate:
-                        print('File needs to be updated',datedt,date,filename)
+                        #print('File needs to be updated',datedt,date,filename)
                         returnval=1
                 else:
-                    print('File found, but have no date to compare')
+                    #print('File found, but have no date to compare')
                     returnval=1
     return returnval
 
@@ -233,7 +233,7 @@ if 1==1:
         fromdir = f'{fromdirbase}/incoming/tjobs'
         fromfile = f'{fromdir}/{docname}'
         slist = os.listdir(fromdir)
-        print(slist)
+        #print(slist)
         if docname not in slist:
             pdf = FPDF()
             pdf.add_page()
@@ -245,16 +245,16 @@ if 1==1:
                 newbody.append(line)
             for jx, line in enumerate(newbody):
                 line = line.strip()
-                print(jx, line)
+                #print(jx, line)
                 pdf.cell(200, 10, txt=line, ln=jx + 2, align='L')
             try:
                 pdf.output(fromfile)
             except:
-                print('Could not create an output file for this one')
+                #print('Could not create an output file for this one')
                 docname = 'fail'
             if docname != 'fail':
                 copyline = f'scp {fromfile} {websites["ssh_data"] + "vSource"}'
-                print('copyline=', copyline)
+                #print('copyline=', copyline)
                 os.system(copyline)
         return docname
 
@@ -264,7 +264,7 @@ if 1==1:
         att_dir='/home/mark/alldocs/emailextracted/knightremits'
         for j,msg in enumerate(msgs):
             adder=datename(msg)
-            print(adder)
+            #print(adder)
             this_name='Remittance'+'_'+adder+'.pdf'
             #print(get_body(email.message_from_bytes(msg[0][1])))
             raw=email.message_from_bytes(msg[0][1])
@@ -287,7 +287,7 @@ if 1==1:
         if gjob==2:
             dayback=450
         datefrom = (datetime.date.today() - datetime.timedelta(dayback)).strftime("%d-%b-%Y")
-        print(datefrom)
+        #print(datefrom)
         username = usernames['infh']
         password = passwords['infh']
         con = imaplib.IMAP4_SSL(imap_url)
@@ -309,24 +309,24 @@ if 1==1:
                     body=body.decode('utf-8')
                     skipit = 1
                 except:
-                    print(f'body not decoded:{body}')
+                    #print(f'body not decoded:{body}')
                     skipit = 0
                 if skipit:
                     docname = makepdf(body, getdate)
                     blist=get_bookings(body)
                     bodylines = body.splitlines()
                     if blist:
-                        print(f'{getdate} {blist}')
+                        #print(f'{getdate} {blist}')
                         for b in blist:
                             b=b.strip()
                             b = b.replace('-', '')
                             size = '40'
                             for line in bodylines:
                                 if b in line and "40'" in line:
-                                    print(f'Booking {b} is a 40')
+                                    #print(f'Booking {b} is a 40')
                                     size = '40'
                                 if b in line and "20'" in line:
-                                    print(f'Booking {b} is a 20')
+                                    #print(f'Booking {b} is a 20')
                                     size = '20'
                             if b not in norepeat:
                                 booktriplet=[b,getdate,getdate,size,docname]
@@ -367,7 +367,7 @@ if 1==1:
                 except:
                     size = '40'
                 if gjob==2:
-                    print('Adding',b,d1,d2)
+                    #print('Adding',b,d1,d2)
                     f.write(b+' '+d1+' '+d2+'\n')
 
                 if gjob==1:
@@ -381,7 +381,7 @@ if 1==1:
                     if size == '40': putsize = '''40' GP 9'6"'''
                     if size == '20': putsize = '''20' GP 8'6"'''
                     if bdat is None and b not in longs:
-                        print('Adding',b,d1,d2)
+                        #print('Adding',b,d1,d2)
                         f.write(b+' '+d1+' '+d2+'\n')
                         sdate=getdate.strftime('%Y-%m-%d')
                         jtype=tcode + 'T'
@@ -389,7 +389,7 @@ if 1==1:
                         load='G'+nextjo[-5:]
                         order='G'+nextjo[-5:]
                         if doc == 'fail': doc = None
-                        print(doc)
+                        #print(doc)
 
                         input = Orders(Status='AO', Jo=nextjo, HaulType='Dray Export DP', Order=order, Bid=bid, Lid=lid,
                                        Did=did, Company2='Global Business Link', Location=None, BOL=None, Booking=b,
@@ -423,7 +423,7 @@ for cdat in cdata:
     con = cdat.Container
     jo = cdat.Jo
     idata = Interchange.query.filter( (Interchange.Container == con) & (Interchange.Date > cutoffdate) ).all()
-    print(bk, con, len(idata))
+    #print(bk, con, len(idata))
     if len(idata) == 2:
         idat1 = idata[0]
         idat2 = idata[1]
@@ -432,9 +432,13 @@ for cdat in cdata:
         if type1 == 'Load In':
             bkin = idat1.Release
             bkout = idat2.Release
-        else:
+        elif type1 == 'Empty Out':
             bkin = idat2.Release
             bkout = idat1.Release
+        elif type1 == 'Dray Off':
+            bkin = idat2.Release
+            bkout = idat1.Release
+
 
         if bkin == bkout:
             print(f'For container {con} the bookings match out and in')
@@ -442,8 +446,8 @@ for cdat in cdata:
             print(f'For container {con} the out on {bkout} and in on {bkin}')
             if bk == bkout:
                 print(f'Need to change Jo {jo} with container {con} from {bk} to {bkin}')
-                cdat.Booking = bkin
-                cdat.BOL = bkout
+                cdat.Booking = bkout
+                cdat.BOL = bkin
                 db.session.commit()
 
 
@@ -459,19 +463,19 @@ for kdat in kdata:
     daysover = today - kdate
     daysover = daysover.days
     if daysover > 12:
-        print(f'For JO {kdat.Jo} with booking {kdat.Booking} and Hstat {kdat.Hstat} from {kdate} to {today} no pull for {daysover} days')
+        #print(f'For JO {kdat.Jo} with booking {kdat.Booking} and Hstat {kdat.Hstat} from {kdate} to {today} no pull for {daysover} days')
         check = Interchange.query.filter( (Interchange.Release == kdat.Booking) & (Interchange.Date > cutoffdate) ).all()
         if check != []:
-            print(f'Found a booking pulled {kdat.Booking} with no match in the orders for Global')
+            #print(f'Found a booking pulled {kdat.Booking} with no match in the orders for Global')
             isid.append(kdat.id)
-            for ck in check:
-                print(f'Found Interchange for {ck.Release} and {ck.Container}')
+            #for ck in check:
+                #print(f'Found Interchange for {ck.Release} and {ck.Container}')
         else:
-            print(f'Confirmed for Killing booking {kdat.Booking} from {kdat.Date} to {today} no pull for {daysover} days')
+            #print(f'Confirmed for Killing booking {kdat.Booking} from {kdat.Date} to {today} no pull for {daysover} days')
             ksid.append(kdat.id)
 
-print(f'Killing these jobs : {ksid}')
-print(f'Need to investigate: {isid}')
+#print(f'Killing these jobs : {ksid}')
+#print(f'Need to investigate: {isid}')
 for ki in ksid:
     Orders.query.filter(Orders.id == ki).delete()
 db.session.commit()

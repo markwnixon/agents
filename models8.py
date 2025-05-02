@@ -477,7 +477,7 @@ class Orders(db.Model):
     PayAcct = db.Column('PayAcct', db.String(45))
     BalDue = db.Column('BalDue', db.String(45))
     Payments = db.Column('Payments', db.String(45))
-    Quote = db.Column('Quote', db.String(45))
+    Quote = db.Column('Quote', db.String(100))
     RateCon = db.Column('RateCon', db.String(100))
     Rcache = db.Column('Rcache', db.Integer)
     Proof2 = db.Column('Proof2', db.String(100))
