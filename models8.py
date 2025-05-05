@@ -295,8 +295,10 @@ class Interchange(db.Model):
     Jo = db.Column('Jo', db.String(25))
     Company = db.Column('Company', db.String(50))
     Other = db.Column('Other', db.String(50))
+    TimeExit = db.Column('TimeExit', db.String(25))
+    PortHours = db.Column('PortHours', db.Integer)
 
-    def __init__(self, Container, TruckNumber, Driver, Chassis, Date, Release, GrossWt, Seals, ConType, CargoWt, Time, Status, Source, Path, Type, Jo, Company, Other):
+    def __init__(self, Container, TruckNumber, Driver, Chassis, Date, Release, GrossWt, Seals, ConType, CargoWt, Time, Status, Source, Path, Type, Jo, Company, Other, TimeExit, PortHours):
         self.Container = Container
         self.TruckNumber = TruckNumber
         self.Driver = Driver
@@ -315,6 +317,8 @@ class Interchange(db.Model):
         self.Jo = Jo
         self.Company = Company
         self.Other = Other
+        self.TimeExit = TimeExit
+        self.PortHours = PortHours
 
 class StreetTurns(db.Model):
     __tablename__ = 'streetturns'

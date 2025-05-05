@@ -571,9 +571,9 @@ def gatescraper(printif, dayback):
                                 thiscon = selectElem.text.strip()
 
                         if hasinput(thiscon) and hasinput(movetyp):
-                            print(cr) if printif == 1 else 1
+                            print(f'cr is:{cr}')
                             dpt = cr[1].split()
-                            print('dpt=', dpt) if printif == 1 else 1
+                            print(f'dpt is:{dpt}')
                             mydate = datetime.strptime(dpt[0], '%m/%d/%Y')
                             mydate = mydate.date()
                             mytime = f'{dpt[1]} {dpt[2]}'
@@ -588,7 +588,8 @@ def gatescraper(printif, dayback):
 
                                 input = Interchange(Container=thiscon, TruckNumber='NAY', Driver='NAY', Chassis=cr[8],
                                                     Date=mydate, Release=cr[11], GrossWt='NAY', Seals='NAY', ConType=contype, CargoWt='NAY',
-                                                    Time=mytime, Status='AAAAAA', Source='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None)
+                                                    Time=mytime, Status='AAAAAA', Source='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None,
+                                                    TimeExit=None, PortHours=None)
 
                                 db.session.add(input)
                                 db.session.commit()
@@ -618,6 +619,15 @@ def gatescraper(printif, dayback):
                         clink = rec[3]
                         browser.get(clink)
                         time.sleep(2)
+
+                        contentstr = '/html/body/table/tbody/tr[3]/td/table/tbody/tr/td[3]'
+                        selectElem = browser.find_element_by_xpath(contentstr)
+                        exitdt = selectElem.text
+                        print(f'Exit Date-Time: {exitdt}')
+                        dpt_exit = exitdt.split()
+                        exit_time = dpt_exit[1]
+                        print(f'Exit time: {exit_time}')
+
 
                         conset = {}
                         con_data = browser.page_source
@@ -655,6 +665,17 @@ def gatescraper(printif, dayback):
                             idat.CargoWt = conset.get("CargoWt")
                             idat.Seals = conset.get("Seals")
                             idat.Source = viewfile
+                            idat.TimeExit = exit_time
+
+                            in_time = idat.Time
+                            in_timedt = datetime.strptime(in_time, '%H:%M')
+                            out_timedt = datetime.strptime(exit_time, '%H:%M')
+                            # Calculate time in port
+                            port_time = out_timedt - in_timedt
+                            port_minutes = int(port_time.seconds / 60)
+                            print(f'port_time:{port_minutes}')
+                            idat.PortHours = port_minutes
+
 
                             newinterchange.append(idat.id)
 
