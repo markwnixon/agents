@@ -625,7 +625,10 @@ def gatescraper(printif, dayback):
                         exitdt = selectElem.text
                         print(f'Exit Date-Time: {exitdt}')
                         dpt_exit = exitdt.split()
-                        exit_time = dpt_exit[1]
+                        try:
+                            exit_time = dpt_exit[1]
+                        except:
+                            exit_time = '00:00'
                         print(f'Exit time: {exit_time}')
 
 
