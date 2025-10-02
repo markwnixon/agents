@@ -167,10 +167,10 @@ def logonfox(err):
     logonyes = 0
     url1 = websites['gate']
     newurl = ''
-    with Display():
+    #with Display():
     #display = Display(visible=0, size=(800, 1080))
     #display.start()
-    #if 1 == 1:
+    if 1 == 1:
         browser = webdriver.Firefox()
         browser.maximize_window()
 
@@ -223,10 +223,10 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     thisdate = datetime.strftime(p.Date + timedelta(0), '%m/%d/%Y')
     print(f'The pins will be created for date: {thisdate} for url {url}')
 
-    with Display():
+    #with Display():
         #display = Display(visible=0, size=(800, 1080))
         #display.start()
-    #if 1 == 1:
+    if 1 == 1:
         browser.get(url)
         softwait(browser, '//*[@id="IsInMove"]')
         #time.sleep(6)
@@ -509,40 +509,46 @@ if nruns > 0:
     logontrys = 0
     #Log on to browser
     err = []
-    browser, url, logonyes, logontrys, err = logonfox(err)
+
+    with Display():
+        browser, url, logonyes, logontrys, err = logonfox(err)
 
 
-if logonyes:
-    for jx, pdat in enumerate(pdata):
-        inbox = 1
-        outbox = 1
+        if logonyes:
+            for jx, pdat in enumerate(pdata):
+                inbox = 1
+                outbox = 1
 
-        if hasinput(pdat.InBook): intype = 'Load In'
-        elif hasinput(pdat.InCon): intype = 'Empty In'
+                if hasinput(pdat.InBook): intype = 'Load In'
+                elif hasinput(pdat.InCon): intype = 'Empty In'
+                else:
+                    intype = 'NoInType'
+                    inbox = 0
+
+                if hasinput(pdat.OutCon): outtype = 'Load Out'
+                elif hasinput(pdat.OutBook): outtype = 'Empty Out'
+                else:
+                    outtype = 'NoOutType'
+                    outbox = 0
+
+                if outbox and inbox:
+                    if not hasinput(pdat.OutChas):
+                        pdat.OutChas = pdat.InChas
+                        db.session.commit()
+
+                ddat = Drivers.query.filter(Drivers.Name==pdat.Driver).first()
+                if ddat is not None:
+                    print(f'We have driver {ddat.Name} with phone {ddat.Phone}')
+                    print(f'We have driver {ddat.Name} driving truck {pdat.Unit} with tag {pdat.Tag}')
+                    print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
+                    print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
+                    pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,jx)
+                else:
+                    print(f'There is incomplete data for driver {pdat.Driver}')
+
+            browser.quit()
+
         else:
-            intype = 'NoInType'
-            inbox = 0
+            browser.quit()
 
-        if hasinput(pdat.OutCon): outtype = 'Load Out'
-        elif hasinput(pdat.OutBook): outtype = 'Empty Out'
-        else:
-            outtype = 'NoOutType'
-            outbox = 0
-
-        if outbox and inbox:
-            if not hasinput(pdat.OutChas):
-                pdat.OutChas = pdat.InChas
-                db.session.commit()
-
-        ddat = Drivers.query.filter(Drivers.Name==pdat.Driver).first()
-        if ddat is not None:
-            print(f'We have driver {ddat.Name} with phone {ddat.Phone}')
-            print(f'We have driver {ddat.Name} driving truck {pdat.Unit} with tag {pdat.Tag}')
-            print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
-            print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
-            pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,jx)
-        else:
-            print(f'There is incomplete data for driver {pdat.Driver}')
-
-    browser.quit()
 if nt == 'remote': tunnel.stop()
