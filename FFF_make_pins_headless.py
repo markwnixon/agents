@@ -221,7 +221,7 @@ def logonfox(err):
 def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     pinget = 0
     thisdate = datetime.strftime(p.Date + timedelta(0), '%m/%d/%Y')
-    print(f'The pins will be created for date: {thisdate}')
+    print(f'The pins will be created for date: {thisdate} for url {url}')
 
     with Display():
         #display = Display(visible=0, size=(800, 1080))
