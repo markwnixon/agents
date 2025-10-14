@@ -1692,7 +1692,7 @@ class Pins(db.Model):
     Unit = db.Column('Unit', db.String(45))
     Tag = db.Column('Tag', db.String(45))
     Phone = db.Column('Phone', db.String(45))
-    Timeslot = db.Column('Timeslot', db.Integer)
+    Timeslot = db.Column('Timeslot', db.String(20))
     Intext = db.Column('Intext', db.String(200))
     Outtext = db.Column('Outtext', db.String(200))
     Notes = db.Column('Notes', db.String(200))

@@ -134,15 +134,22 @@ def fillapptdata(browser, d, p, thisdate):
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
     time.sleep(1)
     itime = p.Timeslot
-    sopts = len(selectElem.options)
-    if itime == 4: itime = sopts-1
-    if itime > sopts-1: itime = sopts-1
-    print(f'Found {sopts} selections')
-    for ix, i in enumerate(selectElem.options):
-        print(ix, i.text)
-        if ix == itime: timeslotname = i.text
 
-    selectElem.select_by_index(itime)
+    sitems = selectElem.options
+    sopts = len(sitems)
+    print(f'We are looking for time slot {itime} in the vector of available times: {sitems} options')
+    if itime in sitems:
+        print(f'We have a matchable time slot {itime}')
+    #if itime == 4: itime = sopts-1
+    #if itime > sopts-1: itime = sopts-1
+
+    for ix, i in enumerate(sitems):
+        print(ix, i.text)
+        if i.text == itime:
+            timeslotname = i.text
+            iselect = ix
+
+    selectElem.select_by_index(iselect)
 
 
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_LicensePlateNumber"]')
@@ -159,6 +166,7 @@ def fillapptdata(browser, d, p, thisdate):
 
 def logonfox(err):
     # First time thru need to logon
+    printif = 1
     username = usernames['gate']
     password = passwords['gate']
     print('username,password=', username, password)
@@ -175,7 +183,7 @@ def logonfox(err):
         browser.maximize_window()
 
         browser.get(url1)
-        print(f'Logon try {logontrys}')
+        print(f'Logon try {logontrys} for url: {url1}')
         if 1 == 1:
             softwait(browser, '//*[@id="UserName"]')
             selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
@@ -471,7 +479,7 @@ contrys = 0
 print(f'Attempting to connect to database and table Pins....')
 while contrys < 4 and conyes == 0:
     try:
-        pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot > 0) & (Pins.Date >= today)).all()
+        pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot != 'Hold Getting') & (Pins.Date >= today)).all()
         nruns = len(pdata)
         conyes = 1
     except:
