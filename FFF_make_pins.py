@@ -131,7 +131,7 @@ def fillapptdata(browser, d, p, thisdate):
     time.sleep(3)
 
     timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
-                '13:00-14:00', '14:00-15:00', '15:00-16:30']
+                '13:00-14:00', '14:00-15:00', '15:00-16:30', '15:00-17:30']
 
     softwait(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
@@ -182,7 +182,7 @@ def fillapptdata(browser, d, p, thisdate):
     #selectElem = Select(browser.find_element_by_xpath('// *[ @ id = "mobileCarrier"]'))
     #time.sleep(1)
     #selectElem.select_by_visible_text(d.Carrier)
-    ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname}'
+    ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.Chassis}'
     return ret_text
 
 def logonfox(err):

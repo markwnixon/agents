@@ -130,24 +130,43 @@ def fillapptdata(browser, d, p, thisdate):
     selectElem.submit()
     time.sleep(3)
 
+    timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
+                '13:00-14:00', '14:00-15:00', '15:00-16:30', '15:00-17:30']
+
     softwait(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
     time.sleep(1)
     itime = p.Timeslot
+    timeslotname = None
 
     sitems = selectElem.options
     sopts = len(sitems)
-    print(f'We are looking for time slot {itime} in the vector of available times: {sitems} options')
-    if itime in sitems:
-        print(f'We have a matchable time slot {itime}')
-    #if itime == 4: itime = sopts-1
-    #if itime > sopts-1: itime = sopts-1
+    timevec = []
+    for i in sitems:
+        timevec.append(i.text)
+    print(f'We are looking for time slot {itime} in the vector of available times: {timevec}')
 
-    for ix, i in enumerate(sitems):
-        print(ix, i.text)
-        if i.text == itime:
-            timeslotname = i.text
+    for ix, td in enumerate(timevec):
+        if itime in td:
+            print(f'We have found timeslot {itime} in the the time available of: {td}')
+            timeslotname = td
             iselect = ix
+
+    if timeslotname is None:
+            print('We have no matching timeslots, go to next available timeslot that IS available')
+            for ix, td in enumerate(timedata):
+                if itime in td:
+                    for kx in range(ix+1, len(timedata)+1):
+                        nexttimeslot = timedata[kx]
+                        for jx, td in enumerate(timevec):
+                            if nexttimeslot in td:
+                                print(f'Need to adjust from timeslot {itime} to timeslot {nexttimeslot}')
+                                timeslotname = td
+                                iselect = jx
+                                break
+                        if timeslotname is not None: break
+                if timeslotname is not None: break
+
 
     selectElem.select_by_index(iselect)
 
@@ -161,7 +180,7 @@ def fillapptdata(browser, d, p, thisdate):
     #selectElem = Select(browser.find_element_by_xpath('// *[ @ id = "mobileCarrier"]'))
     #time.sleep(1)
     #selectElem.select_by_visible_text(d.Carrier)
-    ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname}'
+    ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.Chassis}'
     return ret_text
 
 def logonfox(err):
