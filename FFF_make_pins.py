@@ -182,7 +182,7 @@ def fillapptdata(browser, d, p, thisdate):
     #selectElem = Select(browser.find_element_by_xpath('// *[ @ id = "mobileCarrier"]'))
     #time.sleep(1)
     #selectElem.select_by_visible_text(d.Carrier)
-    ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.Chassis}'
+    ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.InChas}'
     return ret_text
 
 def logonfox(err):

@@ -466,11 +466,15 @@ class Orders(db.Model):
     Gate = db.Column('Gate', db.String(100))
     Package = db.Column('Package', db.String(100))
     Manifest = db.Column('Manifest', db.String(100))
+    DrvProof = db.Column('DrvProof', db.String(100))
+    DrvSeal = db.Column('DrvSeal', db.String(100))
     Scache = db.Column('Scache', db.Integer)
     Pcache = db.Column('Pcache', db.Integer)
     Icache = db.Column('Icache', db.Integer)
     Mcache = db.Column('Mcache', db.Integer)
     Pkcache = db.Column('Pkcache', db.Integer)
+    D1cache = db.Column('D1cache', db.Integer)
+    D2cache = db.Column('D2cache', db.Integer)
     QBi = db.Column('QBi', db.Integer)
     Truck = db.Column('Truck', db.String(45))
     PaidDate = db.Column('PaidDate', db.DateTime)
@@ -495,6 +499,8 @@ class Orders(db.Model):
     SSCO = db.Column('SSCO', db.String(45))
     Ship = db.Column('Ship', db.String(45))
     Voyage = db.Column('Voyage', db.String(45))
+    UserMod = db.Column('UserMod', db.String(45))
+    DelStat = db.Column('DelStat', db.Integer)
 
     def __init__(self, Status, Jo, HaulType, Order, Company, Location, BOL, Booking, Container, Driver, Pickup,
                  Delivery, Amount, Date, Time, Date2, Time2, Time3, PaidInvoice, Source, Description, Chassis,
@@ -502,7 +508,8 @@ class Orders(db.Model):
                  Dropblock2, Commodity, Packing, Links, Hstat, Istat, Proof, Invoice, Gate, Package, Manifest,
                  Scache, Pcache, Icache, Mcache, Pkcache, QBi, InvoTotal, Truck, Dropblock3, Location3, Date3,
                  Date4, Date5, Date6, Date7, Date8, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments,
-                 Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap, SSCO, Ship, Voyage):
+                 Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap, SSCO, Ship, Voyage, UserMod, DelStat,
+                 DrvProof, DrvSeal, D1cache, D2cache):
         self.Status = Status
         self.Jo = Jo
         self.HaulType = HaulType
@@ -586,6 +593,12 @@ class Orders(db.Model):
         self.SSCO = SSCO
         self.Ship = Ship
         self.Voyage = Voyage
+        self.UserMod = UserMod
+        self.DelStat = DelStat
+        self.DrvProof = DrvProof
+        self.DrvSeal = DrvSeal
+        self.D1cache = D1cache
+        self.D2cache = D2cache
 
 class Ardata(db.Model):
     __tablename__ = 'ardata'
@@ -1147,8 +1160,14 @@ class Vehicles(db.Model):
     ServStr = db.Column('StartedService', db.Date)
     ServStp = db.Column('StoppedService', db.Date)
     Active = db.Column('Active', db.Integer)
+    Type = db.Column('Type', db.String(45))
+    Regpdf = db.Column('Regpdf', db.String(100))
+    Titpdf = db.Column('Titpdf', db.String(100))
+    Rcache = db.Column('Rcache', db.Integer)
+    Tcache = db.Column('Tcache', db.Integer)
 
-    def __init__(self, Unit, Year, Make, Model, Color, VIN, Title, Plate, EmpWeight, GrossWt, DOTNum, ExpDate, Odometer, Owner, Status, Ezpassxponder, Portxponder, ServStr, ServStp, Active):
+    def __init__(self, Unit, Year, Make, Model, Color, VIN, Title, Plate, EmpWeight, GrossWt, DOTNum, ExpDate, Odometer, Owner, Status, Ezpassxponder, Portxponder, ServStr, ServStp, Active,
+                 Type, Regpdf, Titpdf, Rcache, Tcache):
         self.Unit = Unit
         self.Year = Year
         self.Make = Make
@@ -1169,6 +1188,11 @@ class Vehicles(db.Model):
         self.ServStr = ServStr
         self.ServStp = ServStp
         self.Active = Active
+        self.Type = Type
+        self.Regpdf = Regpdf
+        self.Titpdf = Titpdf
+        self.Rcache = Rcache
+        self.Tcache = Tcache
 
 class Trucklog(db.Model):
     __tablename__ = 'trucklog'
@@ -1624,6 +1648,7 @@ class Drivers(db.Model):
     Phone = db.Column('Phone', db.String(25))
     Email = db.Column('Email', db.String(50))
     Truck = db.Column('Truck', db.String(9))
+    #Tag = db.Column('Tag', db.String(9))
     ScanCDL = db.Column('ScanCDL', db.String(50))
     ScanMed = db.Column('ScanMed', db.String(50))
     ScanMVR = db.Column('ScanMVR', db.String(50))
@@ -1644,11 +1669,16 @@ class Drivers(db.Model):
     LastTested = db.Column('LastTested', db.DateTime)
     Active = db.Column('Active', db.Integer)
     Carrier = db.Column('Carrier', db.String(45))
-
+    CDLpdf = db.Column('CDLpdf', db.String(100))
+    MEDpdf = db.Column('MEDpdf', db.String(100))
+    TWICpdf = db.Column('TWICpdf', db.String(100))
+    Ccache = db.Column('Ccache', db.Integer)
+    Mcache = db.Column('Mcache', db.Integer)
+    Tcache = db.Column('Tcache', db.Integer)
 
     def __init__(self, Name, Addr1, Addr2, Phone, Email, Truck, ScanCDL, ScanMed, ScanMVR, ScanTwic, JobStart,
                  JobEnd, Tagid, Pin, CDLnum, CDLstate, CDLissue, CDLexpire, DOB, MedExpire, TwicExpire, TwicNum,
-                 PreScreen, LastTested, Active, Carrier):
+                 PreScreen, LastTested, Active, Carrier, CDLpdf, MEDpdf, TWICpdf, Ccache, Mcache, Tcache):
         self.Name = Name
         self.Addr1 = Addr1
         self.Addr2 = Addr2
@@ -1675,6 +1705,12 @@ class Drivers(db.Model):
         self.LastTested = LastTested
         self.Active = Active
         self.Carrier = Carrier
+        self.CDLpdf = CDLpdf
+        self.MEDpdf = MEDpdf
+        self.TWICpdf = TWICpdf
+        self.Ccache = Ccache
+        self.Mcache = Mcache
+        self.Tcache = Tcache
 
 class Pins(db.Model):
     __tablename__ = 'pins'
