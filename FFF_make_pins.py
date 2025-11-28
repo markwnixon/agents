@@ -499,7 +499,7 @@ contrys = 0
 print(f'Attempting to connect to database and table Pins....')
 while contrys < 4 and conyes == 0:
     try:
-        pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot > 0) & (Pins.Date >= today)).all()
+        pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Active == 1) & (Pins.Date >= today)).all()
         nruns = len(pdata)
         conyes = 1
     except:

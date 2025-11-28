@@ -1,6 +1,6 @@
 import os
 purpose = os.environ['PURPOSE']
-print(f'Models has purpose:{purpose}')
+#print(f'Models has purpose:{purpose}')
 if purpose == 'webapp':
     from runmain import db
 else:
@@ -1732,8 +1732,10 @@ class Pins(db.Model):
     Intext = db.Column('Intext', db.String(200))
     Outtext = db.Column('Outtext', db.String(200))
     Notes = db.Column('Notes', db.String(200))
+    Active = db.Column('Active', db.Integer)
+    Maker = db.Column('Maker', db.String(45))
 
-    def __init__(self, Date, Driver, InBook, InCon, InChas, InPin, OutBook, OutCon, OutChas, OutPin, Unit, Tag, Phone, Timeslot, Intext, Outtext, Notes):
+    def __init__(self, Date, Driver, InBook, InCon, InChas, InPin, OutBook, OutCon, OutChas, OutPin, Unit, Tag, Phone, Timeslot, Intext, Outtext, Notes, Active, Maker):
         self.Date = Date
         self.Driver = Driver
         self.InBook = InBook
@@ -1751,6 +1753,9 @@ class Pins(db.Model):
         self.Intext = Intext
         self.Outtext = Outtext
         self.Notes = Notes
+        self.Active = Active
+        self.Maker = Maker
+
 
 class Ships(db.Model):
     __tablename__ = 'ships'

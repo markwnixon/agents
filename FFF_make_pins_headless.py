@@ -19,23 +19,34 @@ from utils import hasinput
 
 #Handle the input arguments from script file
 #Handle the input arguments from script file
+po = False
+
 try:
     scac = sys.argv[1]
     nt = 'remote'
-    print(f'Received input argument of SCAC: {scac}')
+    if po: print(f'Received input argument of SCAC: {scac}')
 except:
-    print('Must have a SCAC code argument or will get from setup file')
-    print('Setting SCAC to FELA since none provided')
+    if po: print('Must have a SCAC code argument or will get from setup file')
+    if po: print('Setting SCAC to FELA since none provided')
     scac = 'fela'
     nt = 'remote'
+    quit()
+
+
+try:
+    pinid = sys.argv[2]
+    if po: print(f'Received input argument of pinid: {pinid}')
+except:
+    if po: print('Must have a second argument for which pin to run')
+    quit()
 
 scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
-    print(f'Running FFF_make_pins for {scac} in tunnel mode: {nt}')
+    if po: print(f'Running FFF_make_pins for {scac} in tunnel mode: {nt}')
 
     host_name = socket.gethostname()
-    print("Host Name:", host_name)
+    if po: print("Host Name:", host_name)
     dropbox_path = getpaths(host_name, 'dropbox')
     ar_path = f'{dropbox_path}/Dray/{scac}_AR_Report.xlsx'
     sys_path = getpaths(host_name, 'system')
@@ -53,7 +64,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
 
 else:
     scac = 'nogo'
-    print('The argument must be FELA or OSLM or NEVO')
+    if po: print('The argument must be FELA or OSLM or NEVO')
     quit()
 
 
@@ -63,22 +74,22 @@ runat = datetime.now()
 tnow = runat.strftime("%M")
 mins = int(tnow)
 today = runat.date()
-print(' ')
-print('_______________________________________________________')
-print(f'This sequence run date: {today}')
-print('_______________________________________________________')
-print(' ')
+if po: print(' ')
+if po: print('_______________________________________________________')
+if po: print(f'This sequence run date: {today}')
+if po: print('_______________________________________________________')
+if po: print(' ')
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
 
 def closethepopup(browser, closebutx):
     handles = browser.window_handles
     for handle in handles:
-        print(f'In closethepop we have handle: {handle}')
-    print(f'We are using handle {browser.current_window_handle}')
+        if po: print(f'In closethepop we have handle: {handle}')
+    if po: print(f'We are using handle {browser.current_window_handle}')
     closebuts = browser.find_elements_by_xpath(closebutx)
     if closebuts:
         for closebut in closebuts:
-            print(f'closebut: {closebut.text}')
+            if po: print(f'closebut: {closebut.text}')
             if closebut.text == 'Close': closebut.click()
 def softwait(browser, xpath):
     closebutx = "//*[contains(@type,'button')]"
@@ -91,7 +102,7 @@ def softwait(browser, xpath):
         textboxes = browser.find_elements_by_xpath(xpath)
         if textboxes:
             for textbox in textboxes:
-                print(f'Finding textboxes on page: {textbox.text}')
+                if po: print(f'Finding textboxes on page: {textbox.text}')
     return
 
 def softwait_long(browser, xpath):
@@ -105,19 +116,19 @@ def softwait_long(browser, xpath):
         textboxes = browser.find_elements_by_xpath(xpath)
         if textboxes:
             for textbox in textboxes:
-                print(f'Finding textboxes on page: {textbox.text}')
+                if po: print(f'Finding textboxes on page: {textbox.text}')
     return
 
 def get_text(browser, xpath):
     time.sleep(1)
     textboxes = browser.find_elements_by_xpath(xpath)
     time.sleep(1)
-    print(f'The textboxes for xpath {xpath} is {textboxes}')
+    if po: print(f'The textboxes for xpath {xpath} is {textboxes}')
     ret_text = 'xxxxx'
     if textboxes:
         for textbox in textboxes:
             thistext = textbox.text
-            print(f'Finding textboxes on page: {thistext}')
+            if po: print(f'Finding textboxes on page: {thistext}')
             if 'Pre-Advise PIN' in thistext: ret_text = thistext
     else:
         ret_text = 'No textboxes found'
@@ -144,23 +155,23 @@ def fillapptdata(browser, d, p, thisdate):
     timevec = []
     for i in sitems:
         timevec.append(i.text)
-    print(f'We are looking for time slot {itime} in the vector of available times: {timevec}')
+    if po: print(f'We are looking for time slot {itime} in the vector of available times: {timevec}')
 
     for ix, td in enumerate(timevec):
         if itime in td:
-            print(f'We have found timeslot {itime} in the the time available of: {td}')
+            if po: print(f'We have found timeslot {itime} in the the time available of: {td}')
             timeslotname = td
             iselect = ix
 
     if timeslotname is None:
-            print('We have no matching timeslots, go to next available timeslot that IS available')
+            if po: print('We have no matching timeslots, go to next available timeslot that IS available')
             for ix, td in enumerate(timedata):
                 if itime in td:
                     for kx in range(ix+1, len(timedata)+1):
                         nexttimeslot = timedata[kx]
                         for jx, td in enumerate(timevec):
                             if nexttimeslot in td:
-                                print(f'Need to adjust from timeslot {itime} to timeslot {nexttimeslot}')
+                                if po: print(f'Need to adjust from timeslot {itime} to timeslot {nexttimeslot}')
                                 timeslotname = td
                                 iselect = jx
                                 break
@@ -188,8 +199,8 @@ def logonfox(err):
     printif = 1
     username = usernames['gate']
     password = passwords['gate']
-    print('username,password=', username, password)
-    print('Entering Firefox') if printif == 1 else 1
+    if po: print('username,password=', username, password)
+    if po: print('Entering Firefox') if printif == 1 else 1
     logontrys = 1
     logonyes = 0
     url1 = websites['gate']
@@ -202,11 +213,11 @@ def logonfox(err):
         browser.maximize_window()
 
         browser.get(url1)
-        print(f'Logon try {logontrys} for url: {url1}')
+        if po: print(f'Logon try {logontrys} for url: {url1}')
         if 1 == 1:
             softwait(browser, '//*[@id="UserName"]')
             selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
-            print('Got xpath for Username') if printif == 1 else 1
+            if po: print('Got xpath for Username') if printif == 1 else 1
             selectElem.clear()
             selectElem.send_keys(username)
         if 1 == 2:
@@ -216,27 +227,27 @@ def logonfox(err):
 
         try:
             selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
-            print('Got xpath for Password') if printif == 1 else 1
+            if po: print('Got xpath for Password') if printif == 1 else 1
             selectElem.clear()
             selectElem.send_keys(password)
             time.sleep(1)
             selectElem.submit()
             time.sleep(8)
-            print('Page should be loaded now')
+            if po: print('Page should be loaded now')
         except:
             err.append('Page did not load within 5 sec try again')
-            print('Page did not load within 5 sec try again')
+            if po: print('Page did not load within 5 sec try again')
             return browser, newurl, logonyes, logontrys, err
 
 
         while logontrys < 4 and logonyes == 0:
             newurl = browser.current_url
             time.sleep(1)
-            print('newurl=', newurl, flush=True)
+            if po: print('newurl=', newurl, flush=True)
             if 'logon' not in newurl:
                 logonyes = 1
             else:
-                print(f'Log on failed on try {logontrys}')
+                if po: print(f'Log on failed on try {logontrys}')
             logontrys += 1
 
         if logonyes:
@@ -248,7 +259,8 @@ def logonfox(err):
 def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     pinget = 0
     thisdate = datetime.strftime(p.Date + timedelta(0), '%m/%d/%Y')
-    print(f'The pins will be created for date: {thisdate} for url {url}')
+    elog = []
+    if po: print(f'The pins will be created for date: {thisdate} for url {url}')
 
     #with Display():
         #display = Display(visible=0, size=(800, 1080))
@@ -257,7 +269,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         browser.get(url)
         softwait(browser, '//*[@id="IsInMove"]')
         #time.sleep(6)
-        print('url=', url, flush=True)
+        if po: print('url=', url, flush=True)
         textboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
         waitboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
         xp1 = "/html/body/div[14]/div[2]/table/tbody/tr[2]/td[4]"
@@ -269,7 +281,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         #waitboxx = f'{xp1} | {xp2} | {xp3}'
         closebutx = "//*[contains(@type,'button')]"
 
-        print(f'inbox is {inbox}')
+        if po: print(f'inbox is {inbox}')
         if inbox:
             selectElem = browser.find_element_by_xpath('//*[@id="IsInMove"]')
             selectElem.click()
@@ -301,7 +313,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem.submit()
 
                 #Load In wait for textbox and extract
-                print(f'Performing softwait for textboxx: {textboxx}')
+                if po: print(f'Performing softwait for textboxx: {textboxx}')
                 softwait_long(browser, textboxx)
                 #softwait_popup(browser)
                 #selectElem = browser.find_element_by_xpath(textboxx)
@@ -310,18 +322,21 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
                 try:
                     pinin = pins[0]
-                    print(f'The load in pin is {pinin}')
+                    if po: print(f'The load in pin is {pinin}')
                     pinget = 1
                     p.InPin = str(pinin)
                     p.OutPin = '1'
                     intext = p.Intext
                     if hasinput(intext):
                         p.Intext = f'[*{pinin}*] {intext}'
+                        elog.append(f'[*{pinin}*] {intext}')
                     else:
                         p.Intext = f'[*{pinin}*] Load In: *{p.InBook}  {p.InCon}*'
+                        elog.append(f'[*{pinin}*] Load In: *{p.InBook}  {p.InCon}*')
                     db.session.commit()
                 except:
-                    print(f'Could not locate the PIN text for Load In {p.InCon}')
+                    if po: print(f'Could not locate the PIN text for Load In {p.InCon}')
+                    elog.append(f'Could not locate the PIN text for Load In {p.InCon}')
                 closethepopup(browser, closebutx)
 
             else:
@@ -356,15 +371,17 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 pintext = get_text(browser, textboxx)
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
                 pinin = pins[0]
-                print(f'The empty in pin is {pinin}')
+                if po: print(f'The empty in pin is {pinin}')
                 pinget = 1
                 p.InPin = str(pinin)
                 p.OutPin = '1'
                 intext = p.Intext
                 if hasinput(intext):
                     p.Intext = f'[*{pinin}*] {intext}'
+                    elog.append(f'[*{pinin}*] {intext}')
                 else:
                     p.Intext = f'[*{pinin}*] Empty In: *{p.InCon}*'
+                    elog.append(f'[*{pinin}*] Empty In: *{p.InCon}*')
                 db.session.commit()
                 closethepopup(browser, closebutx)
 
@@ -405,24 +422,26 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button/span')
                     selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button/span')
                     selectElem.click()
-                    print('Made it past this point')
+                    if po: print('Made it past this point')
 
 
-                print(f'Locating element with text: {textboxx}')
+                if po: print(f'Locating element with text: {textboxx}')
                 softwait_long(browser, textboxx)
                 #selectElem = browser.find_element_by_xpath(textboxx)
                 #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
                 pinout = pins[0]
-                print(f'The empty out pin is {pinout}')
+                if po: print(f'The empty out pin is {pinout}')
                 pinget = 1
                 p.OutPin = str(pinout)
                 outtext = p.Outtext
                 if hasinput(outtext):
                     p.Outtext = f'[*{pinout}*] {outtext}'
+                    elog.append(f'[*{pinout}*] {outtext}')
                 else:
                     p.Outtext = f'[*{pinout}*] Empty Out: *{p.OutBook}*'
+                    elog.append(f'[*{pinout}*] Empty Out: *{p.OutBook}*')
                 db.session.commit()
                 closethepopup(browser, closebutx)
 
@@ -466,28 +485,35 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 #selectElem = browser.find_element_by_xpath(textboxx)
                 #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
-                print(f'The pintext found here is: {pintext} in element {selectElem}')
+                if po: print(f'The pintext found here is: {pintext} in element {selectElem}')
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
                 pinout = pins[0]
-                print(f'The load out pin is {pinout}')
+                if po: print(f'The load out pin is {pinout}')
                 pinget = 1
                 p.OutPin = str(pinout)
                 outtext = p.Outtext
                 if hasinput(outtext):
                     p.Outtext = f'[*{pinout}*] {outtext}'
+                    elog.append(f'[*{pinout}*] {outtext}')
                 else:
                     p.Outtext = f'[*{pinout}*] Load Out: *{p.OutBook}  {p.OutCon}*'
+                    elog.append(f'[*{pinout}*] Load Out: *{p.OutBook}  {p.OutCon}*')
                 db.session.commit()
                 closethepopup(browser, closebutx)
 
 
     if pinget:
-        if inbox and not outbox: p.Outtext = 'Nothing Out'
-        if outbox and not inbox: p.Intext = f'Bare chassis in {p.InChas}'
+        if inbox and not outbox:
+            p.Outtext = 'Nothing Out'
+            elog.append('Nothing Out')
+        if outbox and not inbox:
+            p.Intext = f'Bare chassis in {p.InChas}'
+            elog.append(f'Bare chassis in {p.InChas}')
         p.Phone = d.Phone
         p.Notes = note_text
         db.session.commit()
 
+    return elog
 
 
 
@@ -495,27 +521,39 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 #*********************************************************************
 conyes = 0
 contrys = 0
-print(f'Attempting to connect to database and table Pins....')
+nruns = 0
+if po: print(f'Attempting to connect to database and table Pins....')
 while contrys < 4 and conyes == 0:
     try:
-        pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot != 'Hold Getting') & (Pins.Date >= today)).all()
-        nruns = len(pdata)
+        #pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot != 'Hold Getting') & (Pins.Date >= today)).all()
+        pinid = int(pinid)
+        if po: print(f'Getting pin data for id {pinid}')
+        pdat = Pins.query.filter(Pins.id == pinid).first()
+        nruns = 1
         conyes = 1
     except:
-        print(f'Could not connect to database on try {contrys}')
+        if po: print(f'Could not connect to database on try {contrys}')
         contrys += 1
     time.sleep(1)
 
 if nruns == 0 or conyes == 0:
     if conyes == 0:
-        print('Could not connect to database')
+        if po: print('Could not connect to database')
     else:
-        print(f'There are no pins required per database')
+        if po: print(f'There are no pins required per database')
     quit()
 
 if nruns > 0:
-    print(f'The pin database requires {nruns} new interchange sequences as follows:')
-    for pdat in pdata:
+    maker = pdat.Maker
+    active = pdat.Active
+    timeslot = pdat.Timeslot
+    if maker == 'WEB':
+        if po: print('This pin derived on WEB do not use this headless code to get')
+    if active != 1:
+        if po: print('This pin not labeled as active')
+
+    if po: print(f'The pin database requires {nruns} new interchange sequences as follows:')
+    if 1 == 1:
         if hasinput(pdat.InBook): intype = 'Load In'
         elif hasinput(pdat.InCon): intype = 'Empty In'
         else:
@@ -527,7 +565,7 @@ if nruns > 0:
         else:
             outtype = 'NoOutType'
             outbox = 0
-        print(f'Date: {pdat.Date} Driver: {pdat.Driver} Unit: {pdat.Unit} In-Type: {intype}  Out-Type: {outtype}')
+        if po: print(f'Date: {pdat.Date} Driver: {pdat.Driver} Unit: {pdat.Unit} In-Type: {intype}  Out-Type: {outtype}')
 
 
 
@@ -536,13 +574,16 @@ if nruns > 0:
     logontrys = 0
     #Log on to browser
     err = []
+    elog = []
 
     with Display():
         browser, url, logonyes, logontrys, err = logonfox(err)
 
 
         if logonyes:
-            for jx, pdat in enumerate(pdata):
+            jx = 0
+            if 1 == 1:
+            #for jx, pdat in enumerate(pdata):
                 inbox = 1
                 outbox = 1
 
@@ -565,15 +606,19 @@ if nruns > 0:
 
                 ddat = Drivers.query.filter(Drivers.Name==pdat.Driver).first()
                 if ddat is not None:
-                    print(f'We have driver {ddat.Name} with phone {ddat.Phone}')
-                    print(f'We have driver {ddat.Name} driving truck {pdat.Unit} with tag {pdat.Tag}')
-                    print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
-                    print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
-                    pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,jx)
+                    if po: print(f'We have driver {ddat.Name} with phone {ddat.Phone}')
+                    if po: print(f'We have driver {ddat.Name} driving truck {pdat.Unit} with tag {pdat.Tag}')
+                    if po: print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
+                    if po: print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
+                    elog = pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,jx)
                 else:
-                    print(f'There is incomplete data for driver {pdat.Driver}')
+                    if po: print(f'There is incomplete data for driver {pdat.Driver}')
+                    elog = (f'There is incomplete data for driver {pdat.Driver}')
 
             browser.quit()
+            for elo in elog:
+                print(elo)
+
 
         else:
             browser.quit()

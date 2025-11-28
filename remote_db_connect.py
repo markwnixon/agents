@@ -11,7 +11,7 @@ import mysql.connector
 import sshtunnel
 
 from CCC_system_setup import tup, dbp, qbp, nt
-print(f'In remote_db_connect, CCC system granted tup: {tup} and dbp: {dbp} and need for tunnel is {nt}')
+#print(f'In remote_db_connect, CCC system granted tup: {tup} and dbp: {dbp} and need for tunnel is {nt}')
 
 app = Flask(__name__)
 
