@@ -20,7 +20,7 @@ from selenium.webdriver.firefox.options import Options
 
 #Handle the input arguments from script file
 #Handle the input arguments from script file
-po = False
+po = True
 
 try:
     scac = sys.argv[1]
