@@ -15,6 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import *
 from utils import hasinput
+from selenium.webdriver.firefox.options import Options
 
 
 #Handle the input arguments from script file
@@ -61,6 +62,11 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     if nt == 'remote': from remote_db_connect import tunnel
     from models8 import Interchange, Orders, Drivers, Pins
     from CCC_system_setup import websites, usernames, passwords
+
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--width=1920")
+    options.add_argument("--height=1080")
 
 else:
     scac = 'nogo'
@@ -209,8 +215,9 @@ def logonfox(err):
     #display = Display(visible=0, size=(800, 1080))
     #display.start()
     if 1 == 1:
-        browser = webdriver.Firefox()
-        browser.maximize_window()
+        #browser = webdriver.Firefox()
+        #browser.maximize_window()
+        browser = webdriver.Firefox(options=options)
 
         browser.get(url1)
         if po: print(f'Logon try {logontrys} for url: {url1}')
