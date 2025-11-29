@@ -41,6 +41,15 @@ except:
     if po: print('Must have a second argument for which pin to run')
     quit()
 
+# THIRD ARGUMENT: behavior mode
+try:
+    mode = sys.argv[3].lower()
+    if po: print(f'Received mode argument: {mode}')
+except:
+    mode = 'run'   # default
+    if po: print('No mode argument. Defaulting to RUN.')
+
+
 scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
@@ -86,6 +95,10 @@ if po: print(f'This sequence run date: {today}')
 if po: print('_______________________________________________________')
 if po: print(' ')
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
+
+def get_all_needpin():
+    return Pins.query.filter(Pins.message == 'NeedPin').all()
+
 
 def closethepopup(browser, closebutx):
     handles = browser.window_handles
@@ -529,105 +542,127 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 conyes = 0
 contrys = 0
 nruns = 0
-if po: print(f'Attempting to connect to database and table Pins....')
-while contrys < 4 and conyes == 0:
-    try:
-        #pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot != 'Hold Getting') & (Pins.Date >= today)).all()
-        pinid = int(pinid)
-        if po: print(f'Getting pin data for id {pinid}')
-        pdat = Pins.query.filter(Pins.id == pinid).first()
-        nruns = 1
-        conyes = 1
-    except:
-        if po: print(f'Could not connect to database on try {contrys}')
-        contrys += 1
-    time.sleep(1)
 
-if nruns == 0 or conyes == 0:
-    if conyes == 0:
-        if po: print('Could not connect to database')
-    else:
-        if po: print(f'There are no pins required per database')
-    quit()
+if mode == 'status':
+    status = {
+        "running": True,
+        "scac": scac,
+        "current_pin": pinid,
+        "timestamp": datetime.now().isoformat()
+    }
+    print(status)
+    sys.exit(0)
 
-if nruns > 0:
-    maker = pdat.Maker
-    active = pdat.Active
-    timeslot = pdat.Timeslot
-    if maker == 'WEB':
-        if po: print('This pin derived on WEB do not use this headless code to get')
-    if active != 1:
-        if po: print('This pin not labeled as active')
+if mode == 'all'
+    if po: print(f'Attempting to connect to database and table Pins....')
+    while contrys < 4 and conyes == 0:
+        try:
+            #pdata = Pins.query.filter((Pins.OutPin == '0') & (Pins.Timeslot != 'Hold Getting') & (Pins.Date >= today)).all()
+            pinid = int(pinid)
+            if po: print(f'Getting pin data for id {pinid}')
+            pdat = Pins.query.filter(Pins.id == pinid).first()
+            nruns = 1
+            conyes = 1
+        except:
+            if po: print(f'Could not connect to database on try {contrys}')
+            contrys += 1
+        time.sleep(1)
 
-    if po: print(f'The pin database requires {nruns} new interchange sequences as follows:')
-    if 1 == 1:
-        if hasinput(pdat.InBook): intype = 'Load In'
-        elif hasinput(pdat.InCon): intype = 'Empty In'
+
+
+
+
+    if nruns == 0 or conyes == 0:
+        if conyes == 0:
+            if po: print('Could not connect to database')
         else:
-            intype = 'NoInType'
-            inbox = 0
+            if po: print(f'There are no pins required per database')
+        quit()
 
-        if hasinput(pdat.OutCon): outtype = 'Load Out'
-        elif hasinput(pdat.OutBook): outtype = 'Empty Out'
-        else:
-            outtype = 'NoOutType'
-            outbox = 0
-        if po: print(f'Date: {pdat.Date} Driver: {pdat.Driver} Unit: {pdat.Unit} In-Type: {intype}  Out-Type: {outtype}')
+    if nruns > 0:
+        maker = pdat.Maker
+        active = pdat.Active
+        timeslot = pdat.Timeslot
+        if maker == 'WEB':
+            if po: print('This pin derived on WEB do not use this headless code to get')
+        if active != 1:
+            if po: print('This pin not labeled as active')
 
+        if po: print(f'The pin database requires {nruns} new interchange sequences as follows:')
+        if 1 == 1:
+            if hasinput(pdat.InBook): intype = 'Load In'
+            elif hasinput(pdat.InCon): intype = 'Empty In'
+            else:
+                intype = 'NoInType'
+                inbox = 0
 
-
-if nruns > 0:
-    logonyes = 0
-    logontrys = 0
-    #Log on to browser
-    err = []
-    elog = []
-
-    with Display():
-        browser, url, logonyes, logontrys, err = logonfox(err)
-
-
-        if logonyes:
-            jx = 0
-            if 1 == 1:
-            #for jx, pdat in enumerate(pdata):
-                inbox = 1
-                outbox = 1
-
-                if hasinput(pdat.InBook): intype = 'Load In'
-                elif hasinput(pdat.InCon): intype = 'Empty In'
-                else:
-                    intype = 'NoInType'
-                    inbox = 0
-
-                if hasinput(pdat.OutCon): outtype = 'Load Out'
-                elif hasinput(pdat.OutBook): outtype = 'Empty Out'
-                else:
-                    outtype = 'NoOutType'
-                    outbox = 0
-
-                if outbox and inbox:
-                    if not hasinput(pdat.OutChas):
-                        pdat.OutChas = pdat.InChas
-                        db.session.commit()
-
-                ddat = Drivers.query.filter(Drivers.Name==pdat.Driver).first()
-                if ddat is not None:
-                    if po: print(f'We have driver {ddat.Name} with phone {ddat.Phone}')
-                    if po: print(f'We have driver {ddat.Name} driving truck {pdat.Unit} with tag {pdat.Tag}')
-                    if po: print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
-                    if po: print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
-                    elog = pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,jx)
-                else:
-                    if po: print(f'There is incomplete data for driver {pdat.Driver}')
-                    elog = (f'There is incomplete data for driver {pdat.Driver}')
-
-            browser.quit()
-            for elo in elog:
-                print(elo)
+            if hasinput(pdat.OutCon): outtype = 'Load Out'
+            elif hasinput(pdat.OutBook): outtype = 'Empty Out'
+            else:
+                outtype = 'NoOutType'
+                outbox = 0
+            if po: print(f'Date: {pdat.Date} Driver: {pdat.Driver} Unit: {pdat.Unit} In-Type: {intype}  Out-Type: {outtype}')
 
 
-        else:
-            browser.quit()
+
+    if nruns > 0:
+        logonyes = 0
+        logontrys = 0
+        #Log on to browser
+        err = []
+        elog = []
+
+        with Display():
+            browser, url, logonyes, logontrys, err = logonfox(err)
+
+
+            if logonyes:
+                print(f'PROGRESS: Starting PIN {pdat.id}', flush=True)
+
+                jx = 0
+                if 1 == 1:
+                #for jx, pdat in enumerate(pdata):
+                    inbox = 1
+                    outbox = 1
+
+                    if hasinput(pdat.InBook): intype = 'Load In'
+                    elif hasinput(pdat.InCon): intype = 'Empty In'
+                    else:
+                        intype = 'NoInType'
+                        inbox = 0
+
+                    if hasinput(pdat.OutCon): outtype = 'Load Out'
+                    elif hasinput(pdat.OutBook): outtype = 'Empty Out'
+                    else:
+                        outtype = 'NoOutType'
+                        outbox = 0
+
+                    if outbox and inbox:
+                        if not hasinput(pdat.OutChas):
+                            pdat.OutChas = pdat.InChas
+                            db.session.commit()
+
+                    ddat = Drivers.query.filter(Drivers.Name==pdat.Driver).first()
+                    if ddat is not None:
+                        if po: print(f'We have driver {ddat.Name} with phone {ddat.Phone}')
+                        if po: print(f'We have driver {ddat.Name} driving truck {pdat.Unit} with tag {pdat.Tag}')
+                        if po: print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
+                        if po: print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
+
+                        print(f'PROGRESS: Starting PIN {pdat.id}', flush=True)
+                        elog = pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,jx)
+                        print(f'PROGRESS: Finished PIN {pdat.id}', flush=True)
+
+                    else:
+                        if po: print(f'There is incomplete data for driver {pdat.Driver}')
+                        elog = (f'There is incomplete data for driver {pdat.Driver}')
+
+                browser.quit()
+                for elo in elog:
+                    print(elo)
+
+
+            else:
+                browser.quit()
 
 if nt == 'remote': tunnel.stop()
