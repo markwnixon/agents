@@ -17,6 +17,14 @@ from selenium.common.exceptions import *
 from utils import hasinput
 from selenium.webdriver.firefox.options import Options
 
+import logging
+
+logging.basicConfig(
+    filename='/tmp/selenium_debug.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 
 #Handle the input arguments from script file
 #Handle the input arguments from script file
