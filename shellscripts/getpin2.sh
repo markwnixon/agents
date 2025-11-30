@@ -8,11 +8,13 @@ cd /home/$USER/flask/agents
 
 SCAC="$1"
 PINID="$2"
-TASK_ID="$3"
-CALLBACK_DOMAIN="$4"
+MODE="$3"
+TASK_ID="$4"
+CALLBACK_DOMAIN="$5"
 
 # Run your python script and capture its output
-RESULT=$(python3 FFF_make_pins_headless.py "$SCAC" "$PINID" 2>&1)
+RESULT=$(python3 FFF_make_pins_headless.py "$SCAC" "$PINID" "$MODE" 2>&1)
+
 EXITCODE=$?
 
 # Format safely for JSON (escape double quotes)

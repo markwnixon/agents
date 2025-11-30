@@ -20,7 +20,7 @@ from selenium.webdriver.firefox.options import Options
 import logging
 
 logging.basicConfig(
-    filename='/tmp/selenium_debug.log',
+    filename='selenium_debug.log',
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
@@ -561,7 +561,7 @@ if mode == 'status':
     print(status)
     sys.exit(0)
 
-if mode == 'all'
+if mode == 'all':
     if po: print(f'Attempting to connect to database and table Pins....')
     while contrys < 4 and conyes == 0:
         try:
