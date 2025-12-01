@@ -19,11 +19,22 @@ from selenium.webdriver.firefox.options import Options
 
 import logging
 
-logging.basicConfig(
-    filename='selenium_debug.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+
+logger = logging.getLogger()  # root logger
+logger.setLevel(logging.DEBUG)
+
+# create file handler
+fh = logging.FileHandler('/home/mark/selenium_debug.log')
+fh.setLevel(logging.DEBUG)
+
+# create formatter and attach
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+
+# attach handler to logger
+logger.addHandler(fh)
+
+logger.debug("Logging initialized")
 
 
 #Handle the input arguments from script file
