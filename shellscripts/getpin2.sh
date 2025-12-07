@@ -1,12 +1,12 @@
 #!/bin/bash
-echo "getpin2.sh started at $(date)" >> /tmp/getpin_debug.log
-echo "Args: $@" >> /tmp/getpin_debug.log
+echo "getpin2.sh started at $(date)" >> /home/mark/getpin_debug.log
+echo "Args: $@" >> /home/mark/getpin_debug.log
 
 #echo "getpin.sh which runs python code FFF_make_pins_headless.py"
 #echo "deployed for $USER"
-cd /home/$USER/flask
+cd /home/mark/flask
 source flaskenv/bin/activate
-cd /home/$USER/flask/agents
+cd /home/mark/flask/agents
 #python3 FFF_make_pins_headless.py "$1" "$2" "$3"
 
 SCAC="$1"
@@ -15,11 +15,11 @@ MODE="$3"
 TASK_ID="$4"
 CALLBACK_DOMAIN="$5"
 
-echo "Running Python now..." >> /tmp/getpin_debug.log
+echo "Running Python now..." >> /home/mark/getpin_debug.log
 # Run your python script and capture its output
 RESULT=$(python3 FFF_make_pins_headless.py "$SCAC" "$PINID" "$MODE" 2>&1)
-echo "Python exit code: $?" >> /tmp/getpin_debug.log
-echo "Python output: $RESULT" >> /tmp/getpin_debug.log
+echo "Python exit code: $?" >> /home/mark/getpin_debug.log
+echo "Python output: $RESULT" >> /home/mark/getpin_debug.log
 
 EXITCODE=$?
 
