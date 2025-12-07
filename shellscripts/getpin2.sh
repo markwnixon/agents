@@ -55,7 +55,7 @@ BASE="/home/mark/flask"
 VENV="$BASE/flaskenv/bin/activate"
 AGENTS="$BASE/agents"
 SHELLSCRIPTS="$AGENTS/shellscripts"
-SCRIPT="$AGENTS/getpin2.py"
+SCRIPT="$AGENTS/FFF_make_pins_headless.py"
 
 LOGFILE="/home/mark/pinout_${TASK_ID}.log"
 
