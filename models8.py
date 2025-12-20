@@ -760,22 +760,23 @@ class Quotes(db.Model):
     Date = db.Column('Date', db.DateTime)
     From = db.Column('From', db.String(200))
     Subject = db.Column('Subject', db.String(200))
-    Body = db.Column('Body', db.String(500))
     Mid = db.Column('Mid', db.String(200))
     Person = db.Column('Person', db.String(100))
-    Response = db.Column('Response', db.String(500))
+    Response = db.Column('Response', db.String(2000))
     Amount = db.Column('Amount', db.String(45))
     Location = db.Column('Location', db.String(200))
     Status = db.Column('Status', db.Integer)
     Responder = db.Column('Responder', db.String(45))
     RespDate = db.Column('RespDate', db.DateTime)
-    Start = db.Column('Start', db.String(45))
+    Start = db.Column('Start', db.String(200))
+    Emailto = db.Column('Emailto', db.String(100))
+    Subjectsend = db.Column('Subjectsend', db.String(200))
+    Markup = db.Column('Markup', db.String(10))
 
-    def __init__(self, Date, From, Subject, Body, Response, Amount, Location, Status, Responder, RespDate, Start, Mid, Person):
+    def __init__(self, Date, From, Subject, Response, Amount, Location, Status, Responder, RespDate, Start, Mid, Person, Emailto, Subjectsend, Markup):
         self.Date = Date
         self.From = From
         self.Subject = Subject
-        self.Body = Body
         self.Response = Response
         self.Amount = Amount
         self.Location = Location
@@ -785,6 +786,9 @@ class Quotes(db.Model):
         self.Start = Start
         self.Mid = Mid
         self.Person = Person
+        self.Emailto = Emailto
+        self.Subjectsend = Subjectsend
+        self.Markup = Markup
 
 
 class DriverAssign(db.Model):
