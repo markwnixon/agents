@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 
 import socket
 from utils import getpaths
@@ -20,6 +21,26 @@ from selenium.webdriver.firefox.options import Options
 import logging
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Headless PIN fetcher")
+
+    parser.add_argument("--scac", required=True, help="SCAC code")
+    parser.add_argument("--pinid", required=True, type=int, help="PIN assignment ID")
+    parser.add_argument(
+        "--mode",
+        choices=["run", "status", "all"],
+        default="all",
+        help="Execution mode"
+    )
+    parser.add_argument(
+        "--domain",
+        required=True,
+        help="Callback domain (e.g. https://api.example.com)"
+    )
+
+    return parser.parse_args()
+
+
 logger = logging.getLogger()  # root logger
 logger.setLevel(logging.DEBUG)
 
@@ -36,37 +57,16 @@ logger.addHandler(fh)
 
 logger.debug("Logging initialized")
 
+args = parse_args()
 
-#Handle the input arguments from script file
-#Handle the input arguments from script file
+scac = args.scac
+pinid = args.pinid
+mode = args.mode
+domain = args.domain
+
+print(f"Running PIN job: scac={scac}, pinid={pinid}, mode={mode}, domain={domain}")
+nt = 'remote'
 po = True
-
-try:
-    scac = sys.argv[1]
-    nt = 'remote'
-    if po: print(f'Received input argument of SCAC: {scac}')
-except:
-    if po: print('Must have a SCAC code argument or will get from setup file')
-    if po: print('Setting SCAC to FELA since none provided')
-    scac = 'fela'
-    nt = 'remote'
-    quit()
-
-
-try:
-    pinid = sys.argv[2]
-    if po: print(f'Received input argument of pinid: {pinid}')
-except:
-    if po: print('Must have a second argument for which pin to run')
-    quit()
-
-# THIRD ARGUMENT: behavior mode
-try:
-    mode = sys.argv[3].lower()
-    if po: print(f'Received mode argument: {mode}')
-except:
-    mode = 'run'   # default
-    if po: print('No mode argument. Defaulting to RUN.')
 
 
 scac = scac.upper()
