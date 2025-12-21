@@ -20,20 +20,7 @@ from selenium.webdriver.firefox.options import Options
 
 import logging
 
-from selenium.webdriver.chrome.options import Options
 
-print(f'Running FFF_make_pins_headless')
-options = Options()
-options.add_argument("--headless")
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
-options.add_argument("--window-size=1920,1080")
-
-driver = webdriver.Chrome(options=options)
-driver.get("https://www.google.com")
-print(f'The driver title is: {driver.title}')
-driver.quit()
-quit()
 
 
 def parse_args():
