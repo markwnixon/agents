@@ -30,8 +30,9 @@ options.add_argument("--window-size=1920,1080")
 
 driver = webdriver.Chrome(options=options)
 driver.get("https://www.google.com")
-print(driver.title)
+print(f'The driver title is: {driver.title}')
 driver.quit()
+quit()
 
 
 def parse_args():
