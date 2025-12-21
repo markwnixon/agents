@@ -26,17 +26,6 @@ def parse_args():
 
     parser.add_argument("--scac", required=True, help="SCAC code")
     parser.add_argument("--pinid", required=True, type=int, help="PIN assignment ID")
-    parser.add_argument(
-        "--mode",
-        choices=["run", "status", "all"],
-        default="all",
-        help="Execution mode"
-    )
-    parser.add_argument(
-        "--domain",
-        required=True,
-        help="Callback domain (e.g. https://api.example.com)"
-    )
 
     return parser.parse_args()
 
@@ -61,13 +50,10 @@ args = parse_args()
 
 scac = args.scac
 pinid = args.pinid
-mode = args.mode
-domain = args.domain
 
-print(f"Running PIN job: scac={scac}, pinid={pinid}, mode={mode}, domain={domain}")
+print(f"Running PIN job: scac={scac}, pinid={pinid}")
 nt = 'remote'
 po = True
-
 
 scac = scac.upper()
 
