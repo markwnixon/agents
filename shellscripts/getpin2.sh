@@ -26,9 +26,15 @@ echo "Time   : $(date)"
 echo "----------------------------------------"
 
 # Run the actual headless PIN script
-"$PYTHON" FFF_make_pins_headless.py \
-    --scac "$SCAC" \
-    --pinid "$PINID"
+#"$PYTHON" FFF_make_pins_headless.py \
+#    --scac "$SCAC" \
+#    --pinid "$PINID"
+echo "getpin2.sh which runs python code FFF_make_pins_headless.py"
+echo "deployed for $USER"
+cd /home/$USER/flask
+source flaskenv/bin/activate
+cd /home/$USER/flask/agents
+python3 FFF_make_pins.py "$1" "$2"
 
 EXIT_CODE=$?
 

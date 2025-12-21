@@ -46,10 +46,28 @@ logger.addHandler(fh)
 
 logger.debug("Logging initialized")
 
-args = parse_args()
+#args = parse_args()
 
-scac = args.scac
-pinid = args.pinid
+#scac = args.scac
+#pinid = args.pinid
+
+try:
+    scac = sys.argv[1]
+    print(f'Received input argument of SCAC: {scac}')
+except:
+    print('Must have a SCAC code argument or will get from setup file')
+    print('Setting SCAC to FELA since none provided')
+    scac = 'fela'
+    quit()
+
+try:
+    pinid = sys.argv[2]
+    pinid = int(pinid)
+    print(f'Received input argument of pinid: {pinid}')
+except:
+    print('Must have a pinid argument')
+    quit()
+
 
 print(f"Running PIN job: scac={scac}, pinid={pinid}")
 nt = 'remote'
@@ -236,8 +254,9 @@ def logonfox(err):
         #browser = webdriver.Firefox()
         #browser.maximize_window()
         browser = webdriver.Firefox(options=options)
-
+        print(f'Getting URL {url1}')
         browser.get(url1)
+        print(f'Have the URL and ready to log on....')
         if po: print(f'Logon try {logontrys} for url: {url1}')
         if 1 == 1:
             softwait(browser, '//*[@id="UserName"]')
