@@ -16,7 +16,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import *
 from utils import hasinput
-from selenium.webdriver.firefox.options import Options
+#from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 import logging
 
 def parse_args():
@@ -94,9 +95,11 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
     from CCC_system_setup import websites, usernames, passwords
 
     options = Options()
+    options = Options()
     options.add_argument("--headless")
-    options.add_argument("--width=1920")
-    options.add_argument("--height=1080")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--window-size=1920,1080")
 
 else:
     scac = 'nogo'
@@ -240,7 +243,7 @@ def logonfox(err):
     username = usernames['gate']
     password = passwords['gate']
     if po: print('username,password=', username, password)
-    if po: print('Entering Firefox') if printif == 1 else 1
+    if po: print('Entering Chrome') if printif == 1 else 1
     logontrys = 1
     logonyes = 0
     url1 = websites['gate']
@@ -251,7 +254,8 @@ def logonfox(err):
     if 1 == 1:
         #browser = webdriver.Firefox()
         #browser.maximize_window()
-        browser = webdriver.Firefox(options=options)
+        #browser = webdriver.Firefox(options=options)
+        browser = webdriver.Chrome(options=options)
         print(f'Getting URL {url1}')
         browser.get(url1)
         print(f'Have the URL and ready to log on....')
