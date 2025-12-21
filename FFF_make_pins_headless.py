@@ -41,21 +41,13 @@ fh.setFormatter(formatter)
 
 # attach handler to logger
 logger.addHandler(fh)
-
 logger.debug("Logging initialized")
-
-#args = parse_args()
-
-#scac = args.scac
-#pinid = args.pinid
 
 try:
     scac = sys.argv[1]
     print(f'Received input argument of SCAC: {scac}')
 except:
     print('Must have a SCAC code argument or will get from setup file')
-    print('Setting SCAC to FELA since none provided')
-    scac = 'fela'
     quit()
 
 try:
@@ -66,16 +58,12 @@ except:
     print('Must have a pinid argument')
     quit()
 
-
-print(f"Running PIN job: scac={scac}, pinid={pinid}")
 nt = 'remote'
 po = True
-
 scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
-    if po: print(f'Running FFF_make_pins_headless for {scac} in tunnel mode: {nt}')
-
+    if po: print(f'Running FFF_make_pins_headless for {scac} for pinid {pinid} in tunnel mode: {nt}')
     host_name = socket.gethostname()
     if po: print("Host Name:", host_name)
     dropbox_path = getpaths(host_name, 'dropbox')
@@ -103,23 +91,12 @@ else:
     if po: print('The argument must be FELA or OSLM or NEVO')
     quit()
 
-
 printif = 0
-
 runat = datetime.now()
 tnow = runat.strftime("%M")
 mins = int(tnow)
 today = runat.date()
-if po: print(' ')
-if po: print('_______________________________________________________')
-if po: print(f'This sequence run date: {today}')
-if po: print('_______________________________________________________')
-if po: print(' ')
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
-
-def get_all_needpin():
-    return Pins.query.filter(Pins.message == 'NeedPin').all()
-
 
 def closethepopup(browser, closebutx):
     handles = browser.window_handles
@@ -131,6 +108,7 @@ def closethepopup(browser, closebutx):
         for closebut in closebuts:
             if po: print(f'closebut: {closebut.text}')
             if closebut.text == 'Close': closebut.click()
+
 def softwait(browser, xpath):
     closebutx = "//*[contains(@type,'button')]"
     try:
@@ -221,21 +199,14 @@ def fillapptdata(browser, d, p, thisdate):
 
     selectElem.select_by_index(iselect)
 
-
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_LicensePlateNumber"]')
     selectElem.send_keys(p.Tag)
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_DriverMobileNumber"]')
     selectElem.send_keys(d.Phone)
-    #selectElem.send_keys('7578973266')
-
-    #selectElem = Select(browser.find_element_by_xpath('// *[ @ id = "mobileCarrier"]'))
-    #time.sleep(1)
-    #selectElem.select_by_visible_text(d.Carrier)
     ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.InChas}'
     return ret_text
 
 def logonfox(err):
-    # First time thru need to logon
     printif = 1
     username = usernames['gate']
     password = passwords['gate']
@@ -245,55 +216,51 @@ def logonfox(err):
     logonyes = 0
     url1 = websites['gate']
     newurl = ''
-    #with Display():
-    #display = Display(visible=0, size=(800, 1080))
-    #display.start()
-    if 1 == 1:
-        #browser = webdriver.Firefox()
-        #browser.maximize_window()
-        browser = webdriver.Firefox(options=options)
-        print(f'Getting URL {url1}')
-        browser.get(url1)
-        print(f'Have the URL and ready to log on....')
-        if po: print(f'Logon try {logontrys} for url: {url1}')
-        if 1 == 1:
-            softwait(browser, '//*[@id="UserName"]')
-            selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
-            if po: print('Got xpath for Username') if printif == 1 else 1
-            selectElem.clear()
-            selectElem.send_keys(username)
-        if 1 == 2:
-            err.append('Username did not appear within 30 sec try again')
-            return browser, newurl, logonyes, logontrys, err
+
+    browser = webdriver.Firefox(options=options)
+    print(f'Getting URL {url1}')
+    browser.get(url1)
+    print(f'Have the URL and ready to log on....')
+    if po: print(f'Logon try {logontrys} for url: {url1}')
+    try:
+        softwait(browser, '//*[@id="UserName"]')
+        selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
+        if po: print('Got xpath for Username') if printif == 1 else 1
+        selectElem.clear()
+        selectElem.send_keys(username)
+    except:
+        err.append('Username did not appear within 30 sec try again')
+        return browser, newurl, logonyes, logontrys, err
+
+    try:
+        wait = WebDriverWait(browser, 15)
+        selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
+        if po: print('Got xpath for Password') if printif == 1 else 1
+        selectElem.clear()
+        selectElem.send_keys(password)
+        #time.sleep(1)
+        selectElem.submit()
+        #time.sleep(8)
+        wait.until(EC.url_changes(browser.current_url))
+        if po: print('Page should be loaded now')
+    except:
+        err.append('Page did not load within timeout')
+        if po: print('Page did not load within timeout')
+        return browser, newurl, logonyes, logontrys, err
 
 
-        try:
-            selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
-            if po: print('Got xpath for Password') if printif == 1 else 1
-            selectElem.clear()
-            selectElem.send_keys(password)
-            time.sleep(1)
-            selectElem.submit()
-            time.sleep(8)
-            if po: print('Page should be loaded now')
-        except:
-            err.append('Page did not load within 5 sec try again')
-            if po: print('Page did not load within 5 sec try again')
-            return browser, newurl, logonyes, logontrys, err
+    while logontrys < 4 and logonyes == 0:
+        newurl = browser.current_url
+        time.sleep(1)
+        if po: print('newurl=', newurl, flush=True)
+        if 'logon' not in newurl:
+            logonyes = 1
+        else:
+            if po: print(f'Log on failed on try {logontrys}')
+        logontrys += 1
 
-
-        while logontrys < 4 and logonyes == 0:
-            newurl = browser.current_url
-            time.sleep(1)
-            if po: print('newurl=', newurl, flush=True)
-            if 'logon' not in newurl:
-                logonyes = 1
-            else:
-                if po: print(f'Log on failed on try {logontrys}')
-            logontrys += 1
-
-        if logonyes:
-            newurl = newurl+'#/appointment/LimitedPreAdvise'
+    if logonyes:
+        newurl = newurl+'#/appointment/LimitedPreAdvise'
 
     return browser, newurl, logonyes, logontrys, err
 
@@ -580,10 +547,6 @@ if 1 == 1:
             if po: print(f'Could not connect to database on try {contrys}')
             contrys += 1
         time.sleep(1)
-
-
-
-
 
     if nruns == 0 or conyes == 0:
         if conyes == 0:
