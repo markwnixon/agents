@@ -548,17 +548,8 @@ conyes = 0
 contrys = 0
 nruns = 0
 
-if mode == 'status':
-    status = {
-        "running": True,
-        "scac": scac,
-        "current_pin": pinid,
-        "timestamp": datetime.now().isoformat()
-    }
-    print(status)
-    sys.exit(0)
 
-if mode == 'all':
+if 1 == 1:
     if po: print(f'Attempting to connect to database and table Pins....')
     while contrys < 4 and conyes == 0:
         try:
