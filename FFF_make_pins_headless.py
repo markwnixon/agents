@@ -98,7 +98,7 @@ mins = int(tnow)
 today = runat.date()
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
 
-def oldclosethepopup(browser, closebutx):
+def closethepopup(browser, closebutx):
     handles = browser.window_handles
     for handle in handles:
         if po: print(f'In closethepop we have handle: {handle}')
@@ -110,7 +110,7 @@ def oldclosethepopup(browser, closebutx):
             if closebut.text == 'Close': closebut.click()
 
 
-def closethepopup(browser, close_button_xpath, timeout=10):
+def futureclosethepopup(browser, close_button_xpath, timeout=10):
     try:
         wait = WebDriverWait(browser, timeout)
         # Wait until popup close button is clickable

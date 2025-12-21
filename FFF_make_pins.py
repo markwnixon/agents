@@ -80,6 +80,26 @@ def closethepopup(browser, closebutx):
         for closebut in closebuts:
             print(f'closebut: {closebut.text}')
             if closebut.text == 'Close': closebut.click()
+
+
+def futureclosethepopup(browser, close_button_xpath, timeout=10):
+    try:
+        wait = WebDriverWait(browser, timeout)
+        # Wait until popup close button is clickable
+        close_button = wait.until(
+            EC.element_to_be_clickable((By.XPATH, close_button_xpath))
+        )
+        print("Popup close button found")
+        close_button.click()
+
+        # Optional: wait until popup disappears
+        wait.until(EC.invisibility_of_element(close_button))
+        print("Popup closed successfully")
+        return True
+    except TimeoutException:
+        print("Popup did not appear or could not be closed")
+        return False
+
 def softwait(browser, xpath):
     closebutx = "//*[contains(@type,'button')]"
     try:
