@@ -22,6 +22,7 @@ import logging
 
 from selenium.webdriver.chrome.options import Options
 
+print(f'Running FFF_make_pins_headless')
 options = Options()
 options.add_argument("--headless")
 options.add_argument("--disable-gpu")
@@ -90,7 +91,7 @@ po = True
 scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
-    if po: print(f'Running FFF_make_pins for {scac} in tunnel mode: {nt}')
+    if po: print(f'Running FFF_make_pins_headless for {scac} in tunnel mode: {nt}')
 
     host_name = socket.gethostname()
     if po: print("Host Name:", host_name)
