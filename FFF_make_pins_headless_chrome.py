@@ -148,7 +148,7 @@ def softwait(browser, xpath):
                 if po: print(f'Finding textboxes on page: {textbox.text}')
     return
 
-def softwait_long(browser, xpath):
+def softwait_long_old(browser, xpath):
     closebutx = "//*[contains(@type,'button')]"
     try:
         wait = WebDriverWait(browser, 30, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
@@ -161,6 +161,23 @@ def softwait_long(browser, xpath):
             for textbox in textboxes:
                 if po: print(f'Finding textboxes on page: {textbox.text}')
     return
+
+def softwait_long(browser, xpath, timeout=30):
+    """
+    Waits for a toast/message to become visible again.
+    Works for repeated PrimeFaces-style messages.
+    """
+    end_time = time.time() + timeout
+
+    while time.time() < end_time:
+        elements = browser.find_elements(By.XPATH, xpath)
+        for el in elements:
+            if el.is_displayed() and el.text.strip():
+                return el
+        time.sleep(0.25)
+
+    print("Timeout waiting for toast to reappear")
+    return None
 
 def get_text(browser, xpath):
     time.sleep(1)

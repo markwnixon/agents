@@ -79,8 +79,9 @@ def closethepopup(browser, closebutx):
     if closebuts:
         for closebut in closebuts:
             print(f'closebut: {closebut.text}')
-            if closebut.text == 'Close': closebut.click()
-
+            if closebut.text == 'Close':
+                closebut.click()
+                return True
 
 def futureclosethepopup(browser, close_button_xpath, timeout=10):
     try:
@@ -101,7 +102,7 @@ def futureclosethepopup(browser, close_button_xpath, timeout=10):
         return False
 
 def softwait(browser, xpath):
-    closebutx = "//*[contains(@type,'button')]"
+    #closebutx = "//*[contains(@type,'button')]"
     try:
         wait = WebDriverWait(browser, 16, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
         elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
@@ -114,8 +115,8 @@ def softwait(browser, xpath):
                 print(f'Finding textboxes on page: {textbox.text}')
     return
 
-def softwait_long(browser, xpath):
-    closebutx = "//*[contains(@type,'button')]"
+def softwait_long_old(browser, xpath):
+    #closebutx = "//*[contains(@type,'button')]"
     try:
         wait = WebDriverWait(browser, 30, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
         elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
@@ -127,6 +128,23 @@ def softwait_long(browser, xpath):
             for textbox in textboxes:
                 print(f'Finding textboxes on page: {textbox.text}')
     return
+
+def softwait_long(browser, xpath, timeout=30):
+    """
+    Waits for a toast/message to become visible again.
+    Works for repeated PrimeFaces-style messages.
+    """
+    end_time = time.time() + timeout
+
+    while time.time() < end_time:
+        elements = browser.find_elements(By.XPATH, xpath)
+        for el in elements:
+            if el.is_displayed() and el.text.strip():
+                return el
+        time.sleep(0.25)
+
+    print("Timeout waiting for toast to reappear")
+    return None
 
 def get_text(browser, xpath):
     time.sleep(1)
@@ -215,53 +233,50 @@ def logonfox(err):
     logonyes = 0
     url1 = websites['gate']
     newurl = ''
-    #with Display():
-    #display = Display(visible=0, size=(800, 1080))
-    #display.start()
-    if 1 == 1:
-        browser = webdriver.Firefox()
-        browser.maximize_window()
 
-        browser.get(url1)
-        print(f'Logon try {logontrys}')
-        if 1 == 1:
-            softwait(browser, '//*[@id="UserName"]')
-            selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
-            print('Got xpath for Username') if printif == 1 else 1
-            selectElem.clear()
-            selectElem.send_keys(username)
-        if 1 == 2:
-            err.append('Username did not appear within 30 sec try again')
-            return browser, newurl, logonyes, logontrys, err
+    browser = webdriver.Firefox()
+    browser.maximize_window()
+
+    browser.get(url1)
+    print(f'Logon try {logontrys}')
+    try:
+        softwait(browser, '//*[@id="UserName"]')
+        selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
+        print('Got xpath for Username') if printif == 1 else 1
+        selectElem.clear()
+        selectElem.send_keys(username)
+    except:
+        err.append('Username did not appear within 30 sec try again')
+        return browser, newurl, logonyes, logontrys, err
 
 
-        try:
-            selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
-            print('Got xpath for Password') if printif == 1 else 1
-            selectElem.clear()
-            selectElem.send_keys(password)
-            time.sleep(1)
-            selectElem.submit()
-            time.sleep(8)
-            print('Page should be loaded now')
-        except:
-            err.append('Page did not load within 5 sec try again')
-            print('Page did not load within 5 sec try again')
-            return browser, newurl, logonyes, logontrys, err
+    try:
+        selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
+        print('Got xpath for Password') if printif == 1 else 1
+        selectElem.clear()
+        selectElem.send_keys(password)
+        time.sleep(1)
+        selectElem.submit()
+        time.sleep(8)
+        print('Page should be loaded now')
+    except:
+        err.append('Page did not load within 5 sec try again')
+        print('Page did not load within 5 sec try again')
+        return browser, newurl, logonyes, logontrys, err
 
 
-        while logontrys < 4 and logonyes == 0:
-            newurl = browser.current_url
-            time.sleep(1)
-            print('newurl=', newurl, flush=True)
-            if 'logon' not in newurl:
-                logonyes = 1
-            else:
-                print(f'Log on failed on try {logontrys}')
-            logontrys += 1
+    while logontrys < 4 and logonyes == 0:
+        newurl = browser.current_url
+        time.sleep(1)
+        print('newurl=', newurl, flush=True)
+        if 'logon' not in newurl:
+            logonyes = 1
+        else:
+            print(f'Log on failed on try {logontrys}')
+        logontrys += 1
 
-        if logonyes:
-            newurl = newurl+'#/appointment/LimitedPreAdvise'
+    if logonyes:
+        newurl = newurl+'#/appointment/LimitedPreAdvise'
 
     return browser, newurl, logonyes, logontrys, err
 
@@ -278,7 +293,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         browser.get(url)
         softwait(browser, '//*[@id="IsInMove"]')
         #time.sleep(6)
-        print('url=', url, flush=True)
+        print(f'URL at beginning of pinscriper is {url}')
         textboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
         waitboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
         xp1 = "/html/body/div[14]/div[2]/table/tbody/tr[2]/td[4]"
@@ -292,6 +307,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
         print(f'inbox is {inbox}')
         if inbox:
+            print(f'URL at beginning of inbox section is {url}')
             selectElem = browser.find_element_by_xpath('//*[@id="IsInMove"]')
             selectElem.click()
             selectElem = Select(browser.find_element_by_xpath('//*[@id="PrimaryMoveType"]'))
@@ -322,11 +338,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem.submit()
 
                 #Load In wait for textbox and extract
-                print(f'Performing softwait for textboxx: {textboxx}')
+                print(f'Performing softwait_long for textboxx: {textboxx}')
                 softwait_long(browser, textboxx)
-                #softwait_popup(browser)
-                #selectElem = browser.find_element_by_xpath(textboxx)
-                #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
                 try:
@@ -343,7 +356,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     db.session.commit()
                 except:
                     print(f'Could not locate the PIN text for Load In {p.InCon}')
-                closethepopup(browser, closebutx)
+                completed = closethepopup(browser, closebutx)
 
             else:
 
@@ -372,8 +385,6 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
                 #Empty In wait for textbox and extract
                 softwait_long(browser, textboxx)
-                #selectElem = browser.find_element_by_xpath(textboxx)
-                #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
                 pinin = pins[0]
@@ -387,9 +398,10 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 else:
                     p.Intext = f'[*{pinin}*] Empty In: *{p.InCon}*'
                 db.session.commit()
-                closethepopup(browser, closebutx)
+                completed = closethepopup(browser, closebutx)
 
         if outbox:
+            print(f'URL at beginning of outbox section is {url}')
             #Selection for the out part...
             softwait(browser, '//*[@id="IsOutMove"]')
             time.sleep(1)
@@ -431,8 +443,6 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
                 print(f'Locating element with text: {textboxx}')
                 softwait_long(browser, textboxx)
-                #selectElem = browser.find_element_by_xpath(textboxx)
-                #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
                 pinout = pins[0]
@@ -445,7 +455,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 else:
                     p.Outtext = f'[*{pinout}*] Empty Out: *{p.OutBook}*'
                 db.session.commit()
-                closethepopup(browser, closebutx)
+                completed = closethepopup(browser, closebutx)
 
             if outtype == 'Load Out':
                 selectElem = Select(browser.find_element_by_xpath('//*[@id="SecondaryMoveType"]'))
@@ -482,10 +492,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 time.sleep(1)
                 selectElem.submit()
 
-                # The popup box is different of there is an incoming box....
+                # The popup box is different if there is an incoming box....
                 softwait_long(browser, textboxx)
-                #selectElem = browser.find_element_by_xpath(textboxx)
-                #pintext = selectElem.text
                 pintext = get_text(browser, textboxx)
                 print(f'The pintext found here is: {pintext} in element {selectElem}')
                 pins = [int(s) for s in pintext.split() if s.isdigit()]
@@ -499,7 +507,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 else:
                     p.Outtext = f'[*{pinout}*] Load Out: *{p.OutBook}  {p.OutCon}*'
                 db.session.commit()
-                closethepopup(browser, closebutx)
+                completed = closethepopup(browser, closebutx)
 
 
     if pinget:
@@ -589,6 +597,7 @@ if logonyes:
             print(f'On date {pdat.Date} we have intype {intype} in-booking {pdat.InBook} and in-container {pdat.InCon} and in-chassis {pdat.InChas}')
             print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
             pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,jx)
+            print(f'The url after return from pinscraper is {url}')
         else:
             print(f'There is incomplete data for driver {pdat.Driver}')
 

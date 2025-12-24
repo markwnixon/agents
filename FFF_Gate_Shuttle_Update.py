@@ -420,6 +420,7 @@ def html_scraper(thiscon, movetyp, htmldat):
                         res = line.split(key, 1)
                         value = res[1]
                         value = value.replace('</td>', '')
+                        value = value.replace(': ', '')
                         value = value.strip()
                         print(value)
                         newkey = labels[jx]
