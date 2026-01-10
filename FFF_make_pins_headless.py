@@ -668,9 +668,9 @@ if nruns > 0:
                 if po: print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
 
                 print(f'Starting pinscraper for pin {pdat.id}', flush=True)
-                try:
+                if 1 == 1:
                     elog = pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,0)
-                except:
+                if 1 == 2:
                     pdat.Note = f'Failed to get pin {pdat.id}'
                     db.session.commit()
                 print(f'Returning from pinscraper for pin {pdat.id}', flush=True)
