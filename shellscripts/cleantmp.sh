@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+pkill -9 geckodriver
+pkill -9 firefox
+
 set -euo pipefail
 
 shopt -s nullglob
