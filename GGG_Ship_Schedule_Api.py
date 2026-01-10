@@ -113,14 +113,15 @@ exports = Exports.query.filter(Exports.Active==1).all()
 if exports is not None:
     for exp in exports:
         vessel = exp.Vessel
-        if vessel is not None: vessel = vessel.strip()
-        if vessel not in vships and vessel != 'NOF':
-            try:
-                voyage = exp.Voyage.strip()
-            except:
-                voyage = 'None'
-            vships.append(vessel)
-            vnames.append(f'{vessel}={voyage}')
+        if vessel is not None:
+            vessel = vessel.strip()
+            if vessel not in vships and vessel != 'NOF':
+                try:
+                    voyage = exp.Voyage.strip()
+                except:
+                    voyage = 'None'
+                vships.append(vessel)
+                vnames.append(f'{vessel}={voyage}')
 #print(f'Found {vships} unique and active Export Vessels')
 #print(f'Found {vnames} unique and active Export Vessels')
 ship_names_unique = list(set(unames+vnames))
