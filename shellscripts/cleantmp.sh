@@ -2,6 +2,7 @@
 
 pkill -9 geckodriver
 pkill -9 firefox
+echo "Killed geckodriver and firefox zombie processes"
 
 set -euo pipefail
 
