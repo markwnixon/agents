@@ -334,7 +334,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             selectElem = Select(browser.find_element_by_xpath('//*[@id="PrimaryMoveType"]'))
 
             if intype == 'Load In':
-
+                pdat.Note = f'3) Started on Load In'
+                db.session.commit()
                 #Load In Starts with Booking
                 selectElem.select_by_value('ExportsFullIn')
                 time.sleep(1)
@@ -386,7 +387,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 closethepopup(browser, closebutx)
 
             else:
-
+                pdat.Note = f'4) Started on Empty In'
+                db.session.commit()
                 #Empty In Start with Container number
                 selectElem.select_by_value('EmptyIn')
                 time.sleep(1)
@@ -441,6 +443,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             time.sleep(1)
 
             if outtype == 'Empty Out':
+                pdat.Note = f'5) Started on Empty Out'
+                db.session.commit()
                 #Empty Out Start with Booking
                 softwait(browser, '//*[@id="SecondaryMoveType"]')
                 selectElem = Select(browser.find_element_by_xpath('//*[@id="SecondaryMoveType"]'))
@@ -492,6 +496,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 closethepopup(browser, closebutx)
 
             if outtype == 'Load Out':
+                pdat.Note = f'6) Started on Load Out'
+                db.session.commit()
                 selectElem = Select(browser.find_element_by_xpath('//*[@id="SecondaryMoveType"]'))
                 time.sleep(1)
                 selectElem.select_by_value('ImportsFullOut')
@@ -596,6 +602,9 @@ if nruns > 0:
     maker = pdat.Maker
     active = pdat.Active
     timeslot = pdat.Timeslot
+    pdat.Note = f'1) Database opened and stating to get pin for id {pinid}'
+    db.session.commit()
+
     if maker == 'WEB':
         if po: print('This pin derived on WEB do not use this headless code to get')
     if active != 1:
@@ -631,6 +640,8 @@ if nruns > 0:
             print(f'Starting to get PIN {pdat.id}', flush=True)
             inbox = 1
             outbox = 1
+            pdat.Note = f'2) Database log on successful'
+            db.session.commit()
 
             if hasinput(pdat.InBook): intype = 'Load In'
             elif hasinput(pdat.InCon): intype = 'Empty In'
@@ -657,12 +668,18 @@ if nruns > 0:
                 if po: print(f'On date {pdat.Date} we have outtype {outtype} Out-booking {pdat.OutBook} and Out-container {pdat.OutCon} and Out-chassis {pdat.OutChas}')
 
                 print(f'Starting pinscraper for pin {pdat.id}', flush=True)
-                elog = pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,0)
+                try:
+                    elog = pinscraper(pdat,ddat,inbox,outbox,intype,outtype,browser,url,0)
+                except:
+                    pdat.Note = f'Failed to get pin {pdat.id}'
+                    db.session.commit()
                 print(f'Returning from pinscraper for pin {pdat.id}', flush=True)
 
             else:
                 if po: print(f'There is incomplete data for driver {pdat.Driver}')
                 elog = (f'There is incomplete data for driver {pdat.Driver}')
+                pdat.Note = f'Failed because driver not found'
+                db.session.commit()
 
             for elo in elog:
                 print(elo)
