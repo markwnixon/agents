@@ -115,7 +115,10 @@ if exports is not None:
         vessel = exp.Vessel
         if vessel is not None: vessel = vessel.strip()
         if vessel not in vships and vessel != 'NOF':
-            voyage = exp.Voyage.strip()
+            try:
+                voyage = exp.Voyage.strip()
+            except:
+                voyage = 'None'
             vships.append(vessel)
             vnames.append(f'{vessel}={voyage}')
 #print(f'Found {vships} unique and active Export Vessels')
