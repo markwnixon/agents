@@ -87,16 +87,13 @@ mins = int(tnow)
 today = runat.date()
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
 
-def oldclosethepopup(browser, closebutx):
-    handles = browser.window_handles
-    for handle in handles:
-        if po: print(f'In closethepop we have handle: {handle}')
-    if po: print(f'We are using handle {browser.current_window_handle}')
-    closebuts = browser.find_elements_by_xpath(closebutx)
-    if closebuts:
-        for closebut in closebuts:
-            if po: print(f'closebut: {closebut.text}')
-            if closebut.text == 'Close': closebut.click()
+def safe_click(browser, elem):
+    browser.execute_script(
+        "arguments[0].scrollIntoView({block:'center'});",
+        elem
+    )
+    browser.execute_script("arguments[0].click();", elem)
+
 
 def closethepopup(browser, close_button_xpath, timeout=10):
     wait = WebDriverWait(browser, timeout)
@@ -114,20 +111,6 @@ def closethepopup(browser, close_button_xpath, timeout=10):
 
     return False
 
-def oldsoftwait(browser, xpath):
-    closebutx = "//*[contains(@type,'button')]"
-    try:
-        wait = WebDriverWait(browser, 16, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
-        elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-        time.sleep(1)
-        #elem = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, xpath)))
-    except:
-        textboxes = browser.find_elements_by_xpath(xpath)
-        if textboxes:
-            for textbox in textboxes:
-                if po: print(f'Finding textboxes on page: {textbox.text}')
-    return
-
 def softwait(browser, xpath, timeout=16):
     try:
         wait = WebDriverWait(browser, timeout, poll_frequency=0.5)
@@ -136,20 +119,6 @@ def softwait(browser, xpath, timeout=16):
         if po:
             print(f"Timed out waiting for element: {xpath}")
         return None
-
-def softwait_long_old(browser, xpath):
-    closebutx = "//*[contains(@type,'button')]"
-    try:
-        wait = WebDriverWait(browser, 30, poll_frequency=2,ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
-        elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-        time.sleep(1)
-        #elem = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, xpath)))
-    except:
-        textboxes = browser.find_elements_by_xpath(xpath)
-        if textboxes:
-            for textbox in textboxes:
-                if po: print(f'Finding textboxes on page: {textbox.text}')
-    return
 
 def softwait_long(browser, xpath, timeout=30):
     """
@@ -452,18 +421,11 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 else:
                     #If coming off an incoming box then just need to continue
                     softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
-                    #selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
-                    #selectElem.click()
                     selectElem = browser.find_element(
                         By.XPATH,
                         '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button'
                     )
-
-                    browser.execute_script(
-                        "arguments[0].scrollIntoView({block:'center'});",
-                        selectElem
-                    )
-                    browser.execute_script("arguments[0].click();", selectElem)
+                    safe_click(browser, selectElem)
 
                     print('Made it past this point where we use full xpath because have the inbox also')
 
