@@ -452,8 +452,19 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 else:
                     #If coming off an incoming box then just need to continue
                     softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
-                    selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
-                    selectElem.click()
+                    #selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
+                    #selectElem.click()
+                    selectElem = browser.find_element(
+                        By.XPATH,
+                        '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button'
+                    )
+
+                    browser.execute_script(
+                        "arguments[0].scrollIntoView({block:'center'});",
+                        selectElem
+                    )
+                    browser.execute_script("arguments[0].click();", selectElem)
+
                     print('Made it past this point where we use full xpath because have the inbox also')
 
 
