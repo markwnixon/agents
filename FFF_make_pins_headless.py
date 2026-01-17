@@ -248,7 +248,9 @@ def logonfox(err):
     newurl = ''
 
     browser = webdriver.Firefox()
-    browser.maximize_window()
+    #chatgpt says better to set window size explicitly in headless mode
+    browser.set_window_size(1920, 1080)
+    #browser.maximize_window()
     browser.get(url1)
     wait = WebDriverWait(browser, 30)
 
@@ -449,8 +451,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     selectElem.submit()
                 else:
                     #If coming off an incoming box then just need to continue
-                    softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button/span')
-                    selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button/span')
+                    softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
+                    selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
                     selectElem.click()
                     print('Made it past this point where we use full xpath because have the inbox also')
 
