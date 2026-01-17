@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import *
+from selenium.webdriver.common.action_chains import ActionChains
 from utils import hasinput
 from selenium.webdriver.firefox.options import Options
 import logging
@@ -93,6 +94,7 @@ def safe_click(browser, elem):
         elem
     )
     browser.execute_script("arguments[0].click();", elem)
+
 
 
 def closethepopup(browser, close_button_xpath, timeout=10):
@@ -302,17 +304,21 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             )
 
             # Re-locate the element AFTER render
-            selectElem = browser.find_element(By.XPATH, '//*[@id="PrimaryMoveType"]')
-
-            #selectElem = WebDriverWait(browser, 16).until(
-             #   EC.element_to_be_clickable((By.XPATH, '//*[@id="PrimaryMoveType"]'))
-            #)
+            #selectElem = browser.find_element(By.XPATH, '//*[@id="PrimaryMoveType"]')
+            selectElem = browser.find_element(By.ID, "PrimaryMoveType")
 
             if intype == 'Load In':
                 p.Notes = f'3) Started on Load In'
                 db.session.commit()
+
+                action = ActionChains(browser)
+                action.move_to_element(selectElem).click().perform()
+                # Send keys to select option
+                action.send_keys("Full In").perform()
+
+
                 #Load In Starts with Booking
-                Select(selectElem).select_by_value('ExportsFullIn')
+                #Select(selectElem).select_by_value('ExportsFullIn')
                 softwait(browser, '//*[@id="BookingNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
                 selectElem.send_keys(p.InBook)
@@ -359,8 +365,13 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 p.Notes = f'4) Started on Empty In'
                 db.session.commit()
                 #Empty In Start with Container number
-                selectElem.select_by_value('EmptyIn')
-                time.sleep(1)
+                #selectElem.select_by_value('EmptyIn')
+                #time.sleep(1)
+
+                action = ActionChains(browser)
+                action.move_to_element(selectElem).click().perform()
+                # Send keys to select option
+                action.send_keys("Empty In").perform()
 
                 #selectElem = browser.find_element_by_xpath('//*[@id="ContainerNumber"]')
                 softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
