@@ -284,6 +284,12 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         #display.start()
     if 1 == 1:
         browser.get(url)
+
+        # Wait for the main appointment container to appear
+        WebDriverWait(browser, 20).until(
+            EC.presence_of_element_located((By.XPATH, '//div[@id="divUpdatePanel-IN"]'))
+        )
+
         softwait(browser, '//*[@id="IsInMove"]')
         #time.sleep(6)
         if po: print('url=', url, flush=True)
