@@ -10,7 +10,7 @@ try:
     print(f'Received input argument of SCAC: {scac}')
 except:
     print('Must have a SCAC code argument default is oslm')
-    scac = 'fela'
+    scac = 'oslm'
 
 scac = scac.upper()
 nt = 'remote'
