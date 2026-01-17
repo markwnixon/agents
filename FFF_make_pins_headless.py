@@ -111,10 +111,21 @@ def closethepopup(browser, close_button_xpath, timeout=10):
 
     return False
 
-def softwait(browser, xpath, timeout=16):
+def oldsoftwait(browser, xpath, timeout=16):
     try:
         wait = WebDriverWait(browser, timeout, poll_frequency=0.5)
         return wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+    except TimeoutException:
+        if po:
+            print(f"Timed out waiting for element: {xpath}")
+        return None
+
+def softwait(browser, xpath, timeout=16):
+    try:
+        wait = WebDriverWait(browser, timeout, poll_frequency=0.5)
+        return wait.until(
+            EC.visibility_of_element_located((By.XPATH, xpath))
+        )
     except TimeoutException:
         if po:
             print(f"Timed out waiting for element: {xpath}")
@@ -285,9 +296,17 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
 
-            selectElem = WebDriverWait(browser, 16).until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@id="PrimaryMoveType"]'))
+            # Wait for SPA re-render to complete
+            WebDriverWait(browser, 20).until(
+                EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
             )
+
+            # Re-locate the element AFTER render
+            selectElem = browser.find_element(By.XPATH, '//*[@id="PrimaryMoveType"]')
+
+            #selectElem = WebDriverWait(browser, 16).until(
+             #   EC.element_to_be_clickable((By.XPATH, '//*[@id="PrimaryMoveType"]'))
+            #)
 
             if intype == 'Load In':
                 p.Notes = f'3) Started on Load In'
