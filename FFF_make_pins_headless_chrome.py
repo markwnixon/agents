@@ -134,6 +134,7 @@ def closethepopup(browser, closebutx):
         for closebut in closebuts:
             if po: print(f'closebut: {closebut.text}')
             if closebut.text == 'Close': closebut.click()
+
 def softwait(browser, xpath):
     closebutx = "//*[contains(@type,'button')]"
     try:

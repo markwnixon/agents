@@ -10,9 +10,8 @@ from datetime import datetime, timedelta
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import *
 from utils import hasinput
 
@@ -70,6 +69,29 @@ print('_______________________________________________________')
 print(' ')
 textblock = f'This sequence run at {runat} and minutes are {mins}\n'
 
+
+def set_checkbox(browser, xpath, checked=True, timeout=16):
+    try:
+        elem = WebDriverWait(browser, timeout).until(
+            EC.presence_of_element_located((By.XPATH, xpath))
+        )
+
+        browser.execute_script(
+            "arguments[0].checked = arguments[1];", elem, checked
+        )
+
+        # Optional: fire change event if the page listens for it
+        browser.execute_script(
+            "arguments[0].dispatchEvent(new Event('change'));", elem
+        )
+
+        return True
+
+    except TimeoutException:
+        if po:
+            print(f"Checkbox not found: {xpath}")
+        return False
+
 def closethepopup(browser, closebutx):
     handles = browser.window_handles
     for handle in handles:
@@ -114,6 +136,15 @@ def softwait(browser, xpath):
             for textbox in textboxes:
                 print(f'Finding textboxes on page: {textbox.text}')
     return
+
+def softwaitnew(browser, xpath, timeout=16):
+    try:
+        wait = WebDriverWait(browser, timeout, poll_frequency=0.5)
+        return wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+    except TimeoutException:
+        if po:
+            print(f"Timed out waiting for element: {xpath}")
+        return None
 
 def softwait_long_old(browser, xpath):
     #closebutx = "//*[contains(@type,'button')]"
@@ -208,9 +239,6 @@ def fillapptdata(browser, d, p, thisdate):
 
     selectElem.select_by_index(iselect)
 
-
-
-
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_LicensePlateNumber"]')
     selectElem.send_keys(p.Tag)
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_DriverMobileNumber"]')
@@ -224,7 +252,6 @@ def fillapptdata(browser, d, p, thisdate):
     return ret_text
 
 def logonfox(err):
-    # First time thru need to logon
     username = usernames['gate']
     password = passwords['gate']
     print('username,password=', username, password)
@@ -236,47 +263,42 @@ def logonfox(err):
 
     browser = webdriver.Firefox()
     browser.maximize_window()
-
     browser.get(url1)
+    wait = WebDriverWait(browser, 30)
+
     print(f'Logon try {logontrys}')
-    try:
-        softwait(browser, '//*[@id="UserName"]')
-        selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
-        print('Got xpath for Username') if printif == 1 else 1
-        selectElem.clear()
-        selectElem.send_keys(username)
-    except:
-        err.append('Username did not appear within 30 sec try again')
-        return browser, newurl, logonyes, logontrys, err
-
 
     try:
-        selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
-        print('Got xpath for Password') if printif == 1 else 1
-        selectElem.clear()
-        selectElem.send_keys(password)
-        time.sleep(1)
-        selectElem.submit()
-        time.sleep(8)
-        print('Page should be loaded now')
-    except:
-        err.append('Page did not load within 5 sec try again')
-        print('Page did not load within 5 sec try again')
+        # Username
+        user_elem = wait.until(
+            EC.visibility_of_element_located((By.ID, "UserName"))
+        )
+        user_elem.clear()
+        user_elem.send_keys(username)
+
+        # Password
+        pass_elem = wait.until(
+            EC.visibility_of_element_located((By.ID, "Password"))
+        )
+        pass_elem.clear()
+        pass_elem.send_keys(password)
+        pass_elem.submit()
+
+    except TimeoutException:
+        err.append('Login fields did not appear within timeout')
         return browser, newurl, logonyes, logontrys, err
 
-
-    while logontrys < 4 and logonyes == 0:
+    # Wait for successful navigation (URL change)
+    try:
+        wait.until(lambda d: 'logon' not in d.current_url)
+        logonyes = 1
         newurl = browser.current_url
-        time.sleep(1)
-        print('newurl=', newurl, flush=True)
-        if 'logon' not in newurl:
-            logonyes = 1
-        else:
-            print(f'Log on failed on try {logontrys}')
-        logontrys += 1
+    except TimeoutException:
+        err.append('Login failed after submit')
+        return browser, newurl, logonyes, logontrys, err
 
     if logonyes:
-        newurl = newurl+'#/appointment/LimitedPreAdvise'
+        newurl = newurl + '#/appointment/LimitedPreAdvise'
 
     return browser, newurl, logonyes, logontrys, err
 
@@ -291,9 +313,10 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     #display.start()
     if 1 == 1:
         browser.get(url)
-        softwait(browser, '//*[@id="IsInMove"]')
-        #time.sleep(6)
         print(f'URL at beginning of pinscriper is {url}')
+        print(f'inbox is {inbox}')
+        softwait(browser, '//*[@id="IsInMove"]') # This needed so we know the page has loaded
+
         textboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
         waitboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
         xp1 = "/html/body/div[14]/div[2]/table/tbody/tr[2]/td[4]"
@@ -305,22 +328,26 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         #waitboxx = f'{xp1} | {xp2} | {xp3}'
         closebutx = "//*[contains(@type,'button')]"
 
-        print(f'inbox is {inbox}')
+
         if inbox:
             print(f'URL at beginning of inbox section is {url}')
-            selectElem = browser.find_element_by_xpath('//*[@id="IsInMove"]')
-            selectElem.click()
-            selectElem = Select(browser.find_element_by_xpath('//*[@id="PrimaryMoveType"]'))
+            #set_checkbox(browser, '//*[@id="IsInMove"]', checked=True) #Wait for and check the inbox
+            checkbox = browser.find_element(By.XPATH, '//*[@id="IsInMove"]')
+            # Needs a Hard click
+            browser.execute_script("arguments[0].click();", checkbox)
+
+            selectElem = WebDriverWait(browser, 16).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="PrimaryMoveType"]'))
+            )
 
             if intype == 'Load In':
-
-                #Load In Starts with Booking
-                selectElem.select_by_value('ExportsFullIn')
-                time.sleep(1)
+                Select(selectElem).select_by_value('ExportsFullIn')
+                #selectElem.select_by_value('ExportsFullIn')
+                #time.sleep(1)
                 softwait(browser, '//*[@id="BookingNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
                 selectElem.send_keys(p.InBook)
-                time.sleep(1)
+                #time.sleep(1)
                 selectElem.submit()
                 softwait(browser, '//*[@id="FullInAppts_0__ContainerNumber"]')
 
@@ -361,19 +388,15 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             else:
 
                 #Empty In Start with Container number
-                selectElem.select_by_value('EmptyIn')
-                time.sleep(1)
+                Select(selectElem).select_by_value('EmptyIn')
 
                 #selectElem = browser.find_element_by_xpath('//*[@id="ContainerNumber"]')
                 softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem.send_keys(p.InCon)
-                time.sleep(1)
 
                 # Empty In Driver Data
                 note_text = fillapptdata(browser, d, p, thisdate)
-
-                #softwait(browser, "/html/body/div[1]/div[6]/div[5]/div[1]/div/div[3]/div[1]/form/div[2]/div/div[2]/button/span")
 
                 #Empty In Completion for Chassis
                 selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]')
@@ -402,27 +425,29 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
         if outbox:
             print(f'URL at beginning of outbox section is {url}')
-            #Selection for the out part...
-            softwait(browser, '//*[@id="IsOutMove"]')
-            time.sleep(1)
-            selectElem = browser.find_element_by_xpath('//*[@id="IsOutMove"]')
-            time.sleep(1)
-            selectElem.click()
-            time.sleep(1)
+            checkbox = browser.find_element(By.XPATH, '//*[@id="IsOutMove"]')
+            # Needs a Hard click
+            browser.execute_script("arguments[0].click();", checkbox)
+            # Wait for dropdown to be enabled
+            selectElem = WebDriverWait(browser, 16).until(
+                lambda d: d.find_element(By.XPATH, '//*[@id="SecondaryMoveType"]') if
+                d.find_element(By.XPATH, '//*[@id="SecondaryMoveType"]').is_enabled() else False
+            )
 
             if outtype == 'Empty Out':
+                Select(selectElem).select_by_value('ExportsEmptyOut')
                 #Empty Out Start with Booking
-                softwait(browser, '//*[@id="SecondaryMoveType"]')
-                selectElem = Select(browser.find_element_by_xpath('//*[@id="SecondaryMoveType"]'))
-                selectElem.select_by_value('ExportsEmptyOut')
+                #softwait(browser, '//*[@id="SecondaryMoveType"]')
+                #selectElem = Select(browser.find_element_by_xpath('//*[@id="SecondaryMoveType"]'))
+                #selectElem.select_by_value('ExportsEmptyOut')
                 if not inbox:
                     softwait(browser, '//*[@id="BookingNumber"]')
                     selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
                 else:
                     softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/form/div/div[2]/div[1]/input')
                     selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/form/div/div[2]/div[1]/input')
+
                 selectElem.send_keys(p.OutBook)
-                time.sleep(1)
                 selectElem.submit()
 
                 if not inbox:
@@ -458,11 +483,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 completed = closethepopup(browser, closebutx)
 
             if outtype == 'Load Out':
-                selectElem = Select(browser.find_element_by_xpath('//*[@id="SecondaryMoveType"]'))
-                time.sleep(1)
-                selectElem.select_by_value('ImportsFullOut')
-                time.sleep(1)
-
+                Select(selectElem).select_by_value('ImportsFullOut')
                 # if empty in there will be two container number xpaths, have to use full xpath....
                 if intype == 'Empty In':
                     softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div/form/div/div[1]/div/input')
@@ -472,7 +493,6 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     selectElem = browser.find_element_by_xpath('//*[@id="ContainerNumber"]')
 
                 selectElem.send_keys(p.OutCon)
-                time.sleep(1)
                 selectElem.submit()
 
                 softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')

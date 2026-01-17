@@ -11,9 +11,8 @@ from datetime import datetime, timedelta
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import *
 from utils import hasinput
 from selenium.webdriver.firefox.options import Options
@@ -142,6 +141,15 @@ def softwait(browser, xpath):
             for textbox in textboxes:
                 if po: print(f'Finding textboxes on page: {textbox.text}')
     return
+
+def softwaitnew(browser, xpath, timeout=16):
+    try:
+        wait = WebDriverWait(browser, timeout, poll_frequency=0.5)
+        return wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+    except TimeoutException:
+        if po:
+            print(f"Timed out waiting for element: {xpath}")
+        return None
 
 def softwait_long_old(browser, xpath):
     closebutx = "//*[contains(@type,'button')]"
@@ -435,12 +443,15 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
         if outbox:
             #Selection for the out part...
-            softwait(browser, '//*[@id="IsOutMove"]')
-            time.sleep(1)
-            selectElem = browser.find_element_by_xpath('//*[@id="IsOutMove"]')
-            time.sleep(1)
-            selectElem.click()
-            time.sleep(1)
+            #softwait(browser, '//*[@id="IsOutMove"]')
+            #time.sleep(1)
+            #selectElem = browser.find_element_by_xpath('//*[@id="IsOutMove"]')
+            #time.sleep(1)
+            #selectElem.click()
+            #time.sleep(1)
+            select_elem = softwaitnew(browser, '//*[@id="IsOutMove"]')
+            if select_elem:
+                Select(select_elem).select_by_visible_text("Yes")
 
             if outtype == 'Empty Out':
                 p.Notes = f'5) Started on Empty Out'
