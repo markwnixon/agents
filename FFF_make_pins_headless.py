@@ -249,8 +249,8 @@ def logonfox(err):
 
     browser = webdriver.Firefox()
     #chatgpt says better to set window size explicitly in headless mode
-    browser.set_window_size(1920, 1080)
-    #browser.maximize_window()
+    #browser.set_window_size(1920, 1080)
+    browser.maximize_window()
     browser.get(url1)
     wait = WebDriverWait(browser, 30)
 
