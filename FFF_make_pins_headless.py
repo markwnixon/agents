@@ -165,6 +165,16 @@ def get_text(browser, xpath):
         ret_text = 'No textboxes found'
     return ret_text
 
+# Wait until the select has more than 1 option (skip placeholder 'Loading...')
+def wait_for_timeslots(browser, xpath, timeout=20):
+
+    def options_populated(driver):
+        sel = driver.find_element(By.XPATH, xpath)
+        return len(sel.find_elements(By.TAG_NAME, "option")) > 1  # >1 to skip placeholder
+
+    return WebDriverWait(browser, timeout).until(options_populated)
+
+
 def fillapptdata(browser, d, p, thisdate):
     softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
@@ -175,7 +185,8 @@ def fillapptdata(browser, d, p, thisdate):
     timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
                 '13:00-14:00', '14:00-15:00', '15:00-16:30', '15:00-17:30']
 
-    softwait(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
+    #softwait(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
+    wait_for_timeslots(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
     #time.sleep(1)
     itime = p.Timeslot
