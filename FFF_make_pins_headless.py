@@ -113,6 +113,7 @@ def closethepopup(browser, close_button_xpath, timeout=10):
 
     return False
 
+
 def oldsoftwait(browser, xpath, timeout=16):
     try:
         wait = WebDriverWait(browser, timeout, poll_frequency=0.5)
@@ -444,20 +445,15 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             if outtype == 'Empty Out':
                 p.Notes = f'5) Started on Empty Out'
                 db.session.commit()
-
                 Select(selectElem).select_by_value('ExportsEmptyOut')
+                booking = WebDriverWait(browser, 20).until(
+                    EC.element_to_be_clickable((By.ID, "BookingNumber"))
+                )
+                booking.clear()
+                booking.send_keys(p.OutBook)
+                booking.submit()
 
-                if not inbox:
-                    softwait(browser, '//*[@id="BookingNumber"]')
-                    selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
-                else:
-                    softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/form/div/div[2]/div[1]/input')
-                    selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/form/div/div[2]/div[1]/input')
-
-                selectElem.send_keys(p.OutBook)
-                selectElem.submit()
-
-
+                # We need to know if inbox because there is different about of things to do depending...
                 if not inbox:
                     #If there is no incoming box then we have to fill the driver data also
                     softwait(browser, '//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
@@ -466,13 +462,25 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     selectElem.send_keys(p.OutChas)
                     selectElem.submit()
                 else:
-                    #If coming off an incoming box then just need to continue
-                    softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button')
-                    selectElem = browser.find_element(
-                        By.XPATH,
-                        '/html/body/div[1]/div[6]/div[5]/div[2]/div[1]/div[3]/form/div[5]/div/button'
+                    #The information is different with inbox already setting the chassis and appt information, just have to find and hit the submit button
+                    panel_xpath = "//div[@id='divUpdatePanel-OUT']"
+
+                    submit_btn = WebDriverWait(browser, 20).until(
+                        EC.element_to_be_clickable((
+                            By.XPATH,
+                            f"{panel_xpath}//button[.//span[normalize-space()='Submit']]"
+                        ))
                     )
-                    safe_click(browser, selectElem)
+
+                    browser.execute_script(
+                        "arguments[0].scrollIntoView({block:'center'});", submit_btn
+                    )
+
+                    ActionChains(browser) \
+                        .move_to_element(submit_btn) \
+                        .pause(0.1) \
+                        .click() \
+                        .perform()
 
                     print('Made it past this point where we use full xpath because have the inbox also')
 
@@ -500,18 +508,19 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             if outtype == 'Load Out':
                 p.Notes = f'6) Started on Load Out'
                 db.session.commit()
-
                 Select(selectElem).select_by_value('ImportsFullOut')
-                # if empty in there will be two container number xpaths, have to use full xpath....
-                if intype == 'Empty In':
-                    softwait(browser, '/html/body/div[1]/div[6]/div[5]/div[2]/div/form/div/div[1]/div/input')
-                    selectElem = browser.find_element_by_xpath('/html/body/div[1]/div[6]/div[5]/div[2]/div/form/div/div[1]/div/input')
-                else:
-                    softwait(browser, '//*[@id="ContainerNumber"]')
-                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerNumber"]')
 
-                selectElem.send_keys(p.OutCon)
-                selectElem.submit()
+                # Scope the container number input to the OUT panel
+                panel_xpath = "//div[@id='divUpdatePanel-OUT']"
+                container_xpath = f"{panel_xpath}//input[@id='ContainerNumber']"
+
+                containerid = WebDriverWait(browser, 20).until(
+                    EC.element_to_be_clickable((By.XPATH, container_xpath))
+                )
+
+                containerid.clear()
+                containerid.send_keys(p.OutCon)
+                containerid.submit()
 
                 softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
 
