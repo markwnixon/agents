@@ -151,46 +151,6 @@ def softwait_long(browser, xpath, timeout=30):
     print("Timeout waiting for toast to reappear")
     return None
 
-def safe_select_option(browser, panel_id, select_id, option_text, timeout=20):
-    """
-    Safely selects an option in a SPA select element.
-    - panel_id: id of the container panel (IN or OUT)
-    - select_id: id of the select element
-    - option_text: visible text to select
-    """
-    panel_xpath = f"//div[@id='{panel_id}']"
-    select_xpath = f"{panel_xpath}//select[@id='{select_id}']"
-
-    for attempt in range(3):
-        try:
-            # Locate the current live element
-            selectElem = WebDriverWait(browser, timeout).until(
-                EC.element_to_be_clickable((By.XPATH, select_xpath))
-            )
-
-            # Scroll into view (important in headless)
-            browser.execute_script(
-                "arguments[0].scrollIntoView({block:'center'});", selectElem
-            )
-
-            # Single ActionChains to click + send_keys
-            ActionChains(browser).move_to_element(selectElem).click().send_keys(option_text).perform()
-
-            return selectElem
-        except StaleElementReferenceException:
-            # Small wait and retry if SPA re-rendered the element
-            time.sleep(0.2)
-
-    raise Exception(f"Failed to select '{option_text}' on {select_id}")
-
-
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
-import time
-
 
 def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
     """
@@ -216,7 +176,7 @@ def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
             time.sleep(0.1)  # tiny pause to ensure focus
             action.send_keys(option_text).perform()
 
-            return selectElem
+            return
 
         except StaleElementReferenceException:
             # Element was replaced by JS, retry
@@ -415,7 +375,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 # Send keys to select option
                 #action.send_keys("Full In").perform()
 
-                selectElem = hard_select_option(browser, "PrimaryMoveType", "Full In")
+                # This tested out for Load In
+                hard_select_option(browser, "PrimaryMoveType", "Full In")
 
 
                 #Load In Starts with Booking
@@ -466,11 +427,13 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 p.Notes = f'4) Started on Empty In'
                 db.session.commit()
 
-                selectElem = browser.find_element(By.ID, "PrimaryMoveType")
-                action = ActionChains(browser)
-                action.move_to_element(selectElem).click().perform()
+                hard_select_option(browser, "PrimaryMoveType", "Empty In")
+
+                #selectElem = browser.find_element(By.ID, "PrimaryMoveType")
+                #action = ActionChains(browser)
+                #action.move_to_element(selectElem).click().perform()
                 # Send keys to select option
-                action.send_keys("Empty In").perform()
+                #action.send_keys("Empty In").perform()
 
                 #selectElem = browser.find_element_by_xpath('//*[@id="ContainerNumber"]')
                 softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
