@@ -323,12 +323,13 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
             # Re-locate the element AFTER render
             #selectElem = browser.find_element(By.XPATH, '//*[@id="PrimaryMoveType"]')
-            selectElem = browser.find_element(By.ID, "PrimaryMoveType")
+            #selectElem = browser.find_element(By.ID, "PrimaryMoveType")
 
             if intype == 'Load In':
                 p.Notes = f'3) Started on Load In'
                 db.session.commit()
 
+                selectElem = browser.find_element(By.ID, "PrimaryMoveType")
                 action = ActionChains(browser)
                 action.move_to_element(selectElem).click().perform()
                 # Send keys to select option
@@ -382,10 +383,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             else:
                 p.Notes = f'4) Started on Empty In'
                 db.session.commit()
-                #Empty In Start with Container number
-                #selectElem.select_by_value('EmptyIn')
-                #time.sleep(1)
 
+                selectElem = browser.find_element(By.ID, "PrimaryMoveType")
                 action = ActionChains(browser)
                 action.move_to_element(selectElem).click().perform()
                 # Send keys to select option
