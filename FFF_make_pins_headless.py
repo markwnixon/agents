@@ -351,7 +351,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
             # Wait for SPA re-render to complete
             #WebDriverWait(browser, 20).until(
-             #   EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
+            #    EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
             #)
 
             # Re-locate the element AFTER render
@@ -363,12 +363,14 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 db.session.commit()
 
                 #selectElem = browser.find_element(By.ID, "PrimaryMoveType")
-
-                selectElem = safe_select_option(browser, "divUpdatePanel-IN", "PrimaryMoveType", "Full In")
-                #action = ActionChains(browser)
-                #action.move_to_element(selectElem).click().perform()
+                selectElem = WebDriverWait(browser, 20).until(
+                EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
+                )
+                #selectElem = safe_select_option(browser, "divUpdatePanel-IN", "PrimaryMoveType", "Full In")
+                action = ActionChains(browser)
+                action.move_to_element(selectElem).click().perform()
                 # Send keys to select option
-                #action.send_keys("Full In").perform()
+                action.send_keys("Full In").perform()
 
 
                 #Load In Starts with Booking
