@@ -184,6 +184,49 @@ def safe_select_option(browser, panel_id, select_id, option_text, timeout=20):
     raise Exception(f"Failed to select '{option_text}' on {select_id}")
 
 
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+import time
+
+
+def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
+    """
+    Performs a 'hard' selection on a select box:
+    - clicks into the select
+    - sends keys for the option
+    - triggers SPA JS
+    Retries if element is stale.
+    """
+    for attempt in range(retries):
+        try:
+            # Wait until the select element is clickable
+            selectElem = WebDriverWait(browser, timeout).until(
+                EC.element_to_be_clickable((By.ID, select_id))
+            )
+
+            # Scroll into view (headless mode may need this)
+            browser.execute_script("arguments[0].scrollIntoView({block:'center'});", selectElem)
+
+            # Perform hard selection
+            action = ActionChains(browser)
+            action.move_to_element(selectElem).click().perform()
+            time.sleep(0.1)  # tiny pause to ensure focus
+            action.send_keys(option_text).perform()
+
+            return selectElem
+
+        except StaleElementReferenceException:
+            # Element was replaced by JS, retry
+            time.sleep(0.2)
+        except TimeoutException:
+            time.sleep(0.2)
+
+    raise Exception(f"Failed to hard-select '{option_text}' in select '{select_id}'")
+
+
 def get_text(browser, xpath):
     time.sleep(1)
     textboxes = browser.find_elements_by_xpath(xpath)
@@ -363,14 +406,16 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 db.session.commit()
 
                 #selectElem = browser.find_element(By.ID, "PrimaryMoveType")
-                selectElem = WebDriverWait(browser, 20).until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
-                )
+                #selectElem = WebDriverWait(browser, 20).until(
+                #EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
+                #)
                 #selectElem = safe_select_option(browser, "divUpdatePanel-IN", "PrimaryMoveType", "Full In")
-                action = ActionChains(browser)
-                action.move_to_element(selectElem).click().perform()
+                #action = ActionChains(browser)
+                #action.move_to_element(selectElem).click().perform()
                 # Send keys to select option
-                action.send_keys("Full In").perform()
+                #action.send_keys("Full In").perform()
+
+                selectElem = hard_select_option(browser, "PrimaryMoveType", "Full In")
 
 
                 #Load In Starts with Booking
