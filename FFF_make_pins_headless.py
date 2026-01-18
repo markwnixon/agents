@@ -151,6 +151,39 @@ def softwait_long(browser, xpath, timeout=30):
     print("Timeout waiting for toast to reappear")
     return None
 
+def safe_select_option(browser, panel_id, select_id, option_text, timeout=20):
+    """
+    Safely selects an option in a SPA select element.
+    - panel_id: id of the container panel (IN or OUT)
+    - select_id: id of the select element
+    - option_text: visible text to select
+    """
+    panel_xpath = f"//div[@id='{panel_id}']"
+    select_xpath = f"{panel_xpath}//select[@id='{select_id}']"
+
+    for attempt in range(3):
+        try:
+            # Locate the current live element
+            selectElem = WebDriverWait(browser, timeout).until(
+                EC.element_to_be_clickable((By.XPATH, select_xpath))
+            )
+
+            # Scroll into view (important in headless)
+            browser.execute_script(
+                "arguments[0].scrollIntoView({block:'center'});", selectElem
+            )
+
+            # Single ActionChains to click + send_keys
+            ActionChains(browser).move_to_element(selectElem).click().send_keys(option_text).perform()
+
+            return selectElem
+        except StaleElementReferenceException:
+            # Small wait and retry if SPA re-rendered the element
+            time.sleep(0.2)
+
+    raise Exception(f"Failed to select '{option_text}' on {select_id}")
+
+
 def get_text(browser, xpath):
     time.sleep(1)
     textboxes = browser.find_elements_by_xpath(xpath)
@@ -317,9 +350,9 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             browser.execute_script("arguments[0].click();", checkbox)
 
             # Wait for SPA re-render to complete
-            WebDriverWait(browser, 20).until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
-            )
+            #WebDriverWait(browser, 20).until(
+             #   EC.presence_of_element_located((By.XPATH, '//*[@id="PrimaryMoveType"]'))
+            #)
 
             # Re-locate the element AFTER render
             #selectElem = browser.find_element(By.XPATH, '//*[@id="PrimaryMoveType"]')
@@ -329,11 +362,13 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 p.Notes = f'3) Started on Load In'
                 db.session.commit()
 
-                selectElem = browser.find_element(By.ID, "PrimaryMoveType")
-                action = ActionChains(browser)
-                action.move_to_element(selectElem).click().perform()
+                #selectElem = browser.find_element(By.ID, "PrimaryMoveType")
+
+                selectElem = safe_select_option(browser, "divUpdatePanel-IN", "PrimaryMoveType", "Full In")
+                #action = ActionChains(browser)
+                #action.move_to_element(selectElem).click().perform()
                 # Send keys to select option
-                action.send_keys("Full In").perform()
+                #action.send_keys("Full In").perform()
 
 
                 #Load In Starts with Booking
