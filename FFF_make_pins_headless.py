@@ -131,7 +131,7 @@ def softwait_long(browser, xpath, timeout=30):
     return None
 
 
-def hard_select_optionx(browser, select_id, option_text, timeout=20, retries=3):
+def hard_select_option(browser, select_id, option_text, timeout=20, retries=5):
     """
     Performs a 'hard' selection on a select box:
     - clicks into the select
@@ -140,6 +140,7 @@ def hard_select_optionx(browser, select_id, option_text, timeout=20, retries=3):
     Retries if element is stale.
     """
     for attempt in range(retries):
+        print(f'Hard selection attempt {attempt}')
         try:
             # Wait until the select element is clickable
             selectElem = WebDriverWait(browser, timeout).until(
@@ -162,62 +163,6 @@ def hard_select_optionx(browser, select_id, option_text, timeout=20, retries=3):
             time.sleep(0.2)
         except TimeoutException:
             time.sleep(0.2)
-
-    raise Exception(f"Failed to hard-select '{option_text}' in select '{select_id}'")
-
-def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
-    for attempt in range(retries):
-        try:
-            # Wait for presence (not clickable yet)
-            WebDriverWait(browser, timeout).until(
-                EC.presence_of_element_located((By.ID, select_id))
-            )
-
-            selectElem = browser.find_element(By.ID, select_id)
-
-            # Wait until enabled via JS (more reliable than is_enabled())
-            WebDriverWait(browser, timeout).until(
-                lambda d: d.execute_script(
-                    "return !document.getElementById(arguments[0]).disabled;",
-                    select_id
-                )
-            )
-
-            # Scroll + focus
-            browser.execute_script(
-                "arguments[0].scrollIntoView({block:'center'}); arguments[0].focus();",
-                selectElem
-            )
-
-            # Hard click via JS (ActionChains can fail in headless)
-            browser.execute_script("arguments[0].click();", selectElem)
-
-            # Try native Select first (fires correct events if supported)
-            try:
-                Select(selectElem).select_by_visible_text(option_text)
-            except Exception:
-                # Fallback: keyboard selection
-                ActionChains(browser).send_keys(option_text).perform()
-
-            # Explicitly fire change/input events (SPA-safe)
-            browser.execute_script("""
-                arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
-                arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
-            """, selectElem)
-
-            # Verify selection stuck
-            WebDriverWait(browser, timeout).until(
-                lambda d: Select(
-                    d.find_element(By.ID, select_id)
-                ).first_selected_option.text.strip() == option_text
-            )
-
-            return  # success
-
-        except (StaleElementReferenceException, TimeoutException):
-            if attempt == retries - 1:
-                raise
-            time.sleep(0.3)
 
     raise Exception(f"Failed to hard-select '{option_text}' in select '{select_id}'")
 
