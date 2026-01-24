@@ -419,16 +419,27 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
         if outbox:
             print(f'URL at beginning of outbox section is {url}')
-            #checkbox = browser.find_element(By.XPATH, '//*[@id="IsOutMove"]')
             checkbox = WebDriverWait(browser, 10).until(
                 EC.element_to_be_clickable((By.ID, "IsOutMove"))
             )
-            # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
-            # Wait for dropdown to be enabled
-            selectElem = WebDriverWait(browser, 16).until(
-                lambda d: d.find_element(By.XPATH, '//*[@id="SecondaryMoveType"]') if
-                d.find_element(By.XPATH, '//*[@id="SecondaryMoveType"]').is_enabled() else False
+
+            WebDriverWait(browser, 20).until(
+                lambda d: d.execute_script("""
+                    return !window.Sys ||
+                           !Sys.WebForms ||
+                           !Sys.WebForms.PageRequestManager.getInstance().get_isInAsyncPostBack();
+                """)
+            )
+
+            selectElem = WebDriverWait(browser, 20).until(
+                EC.presence_of_element_located((By.ID, "SecondaryMoveType"))
+            )
+
+            WebDriverWait(browser, 20).until(
+                lambda d: d.execute_script(
+                    "return !document.getElementById('SecondaryMoveType').disabled;"
+                )
             )
 
             if outtype == 'Empty Out':
