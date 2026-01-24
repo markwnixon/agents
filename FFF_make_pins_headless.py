@@ -419,7 +419,10 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
         if outbox:
             print(f'URL at beginning of outbox section is {url}')
-            checkbox = browser.find_element(By.XPATH, '//*[@id="IsOutMove"]')
+            #checkbox = browser.find_element(By.XPATH, '//*[@id="IsOutMove"]')
+            checkbox = WebDriverWait(browser, 10).until(
+                EC.element_to_be_clickable((By.ID, "IsOutMove"))
+            )
             # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
             # Wait for dropdown to be enabled
