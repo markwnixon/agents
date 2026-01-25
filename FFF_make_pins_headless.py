@@ -911,6 +911,7 @@ if nruns > 0:
                 pdat.Notes = f'Failed because driver not found'
                 db.session.commit()
 
+            elog.append('The run is concluded')
             for elo in elog:
                 print(elo)
 
