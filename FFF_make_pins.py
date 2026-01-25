@@ -146,6 +146,7 @@ def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
 def get_text(browser, xpath):
     time.sleep(1)
     textboxes = browser.find_elements_by_xpath(xpath)
+    # if textboxes = []
     time.sleep(1)
     print(f'The textboxes for xpath {xpath} is {textboxes}')
     ret_text = 'xxxxx'
@@ -157,6 +158,46 @@ def get_text(browser, xpath):
     else:
         ret_text = 'No textboxes found'
     return ret_text
+
+def get_result_message(browser, timeout=15):
+    """
+    Returns success PIN message or error dialog text.
+    """
+    error = 0
+
+    wait = WebDriverWait(browser, timeout)
+
+    # XPaths
+    success_xpath = "//*[contains(text(),'Pre-Advise created successfully')]"
+    error_xpath = "//div[contains(@class,'ui-dialog-content')]//td[contains(@class,'error')]"
+    # NEW: alert dialog without td.error
+    alert_xpath = "//div[@id='dialog-alert']//td[normalize-space()]"
+
+    try:
+        elem = wait.until(
+            lambda d: next(
+                (
+                    e for e in
+                    d.find_elements(By.XPATH, success_xpath)
+                    + d.find_elements(By.XPATH, error_xpath)
+                    + d.find_elements(By.XPATH, alert_xpath)
+                    if e.is_displayed() and e.text.strip()
+                ),
+                None
+            )
+        )
+
+        text = elem.text.strip()
+        print(f"Popup message found: {text}")
+
+        if 'successfully' in text:
+            error = False
+        else: error = True
+
+        return text, error
+
+    except TimeoutException:
+        return "No result message found", True
 
 # Wait until the select has more than 1 option (skip placeholder 'Loading...')
 def wait_for_timeslots(browser, xpath, timeout=20):
@@ -222,6 +263,83 @@ def fillapptdata(browser, d, p, thisdate):
     ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.InChas}'
     return ret_text
 
+
+def wait_for_booking_result(browser, timeout=5):
+    BOOKING_NOT_FOUND_XPATH = (
+        "//div[@id='divBookingSummary']//td[normalize-space()='Booking was not found']"
+    )
+
+    BOOKING_FULL_XPATH = (
+        "//span[contains(@class,'error') and "
+        "contains(normalize-space(),'All appointments have been made')]"
+    )
+
+    CHASSIS_XPATH = (
+        "//*[@id='EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber']"
+    )
+
+    ALL_IS_WELL_XPATH = (
+        "//*[@id='FullInAppts_0__ContainerNumber']"
+    )
+
+    wait = WebDriverWait(browser, timeout)
+
+    wait.until(
+        lambda d: (
+                d.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
+                or d.find_elements(By.XPATH, BOOKING_FULL_XPATH)
+                or d.find_elements(By.XPATH, CHASSIS_XPATH)
+                or d.find_elements(By.XPATH, ALL_IS_WELL_XPATH)
+        )
+    )
+
+    # ❌ Booking not found
+    err = browser.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
+    if err:
+        return err[0].text.strip(), True
+
+    # ❌ Booking full
+    err = browser.find_elements(By.XPATH, BOOKING_FULL_XPATH)
+    if err:
+        return err[0].text.strip(), True
+
+    # ✅ Success path, or if time out looking for an error
+    return 'continue', False
+
+
+def wait_for_container_result(browser, timeout=15):
+    # This function checks to see if the container associated with a pin reservation is allowed to be pulled
+    # from the port and if it is not it returns the error messages.  If no error it allow continuation
+    # INLINE_ERROR_XPATH = (
+    #    "//span[contains(@class,'error') and "
+    #    "contains(text(),'Unable to create pre-advise')]"
+    # )
+    ERROR_SPANS_XPATH = "//span[contains(@class,'error')]"
+
+    # The element that only appears if container is accepted
+    PIN_XPATH = "//*[@id='ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber']"
+    #'//*[@id="EmptyInAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]'
+    wait = WebDriverWait(browser, timeout)
+
+    elems = wait.until(
+        lambda d: (
+                d.find_elements(By.XPATH, ERROR_SPANS_XPATH)
+                or d.find_elements(By.XPATH, PIN_XPATH)
+        )
+    )
+    # Check for errors first
+    error_spans = browser.find_elements(By.XPATH, ERROR_SPANS_XPATH)
+    if error_spans:
+        msg = " ".join(
+            s.text.strip()
+            for s in error_spans
+            if s.text.strip()
+        )
+        return msg, True
+
+    # Otherwise success
+    return 'continue', False
+
 def logonfox(err):
     username = usernames['gate']
     password = passwords['gate']
@@ -276,6 +394,7 @@ def logonfox(err):
 
 def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     pinget = 0
+    error = 0
     thisdate = datetime.strftime(p.Date + timedelta(0), '%m/%d/%Y')
     print(f'The pins will be created for date: {thisdate} for url {url}')
 
@@ -309,7 +428,22 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
                 selectElem.send_keys(p.InBook)
                 selectElem.submit()
-                softwait(browser, '//*[@id="FullInAppts_0__ContainerNumber"]')
+
+                # We could have an issue with the booking for the load in so need to error check here
+                text, error = wait_for_booking_result(browser)
+                print(f'The load in text is {text} and error is {error}')
+                if error:
+                    print('Writing the error for booking inbound box to the database')
+                    pinget = 0
+                    p.Notes = f'Error: {text[:190]}'
+                    p.Active = 0
+                    modtext = f'Error on: {p.Intext}'
+                    p.Intext = modtext
+                    db.session.commit()
+                    return
+
+                #softwait(browser, '//*[@id="FullInAppts_0__ContainerNumber"]')
+                #Dont have to softwait anymore becauce the wait_for_booking error check does this now
 
                 #Load In Driver info
                 note_text = fillapptdata(browser, d, p, thisdate)
@@ -324,24 +458,34 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem.submit()
 
                 #Load In wait for textbox and extract
-                print(f'Performing softwait_long for textboxx: {textboxx}')
-                softwait_long(browser, textboxx)
-                pintext = get_text(browser, textboxx)
-                pins = [int(s) for s in pintext.split() if s.isdigit()]
-                try:
-                    pinin = pins[0]
-                    print(f'The load in pin is {pinin}')
-                    pinget = 1
-                    p.InPin = str(pinin)
-                    p.OutPin = '1'
-                    intext = p.Intext
-                    if hasinput(intext):
-                        p.Intext = f'[*{pinin}*] {intext}'
-                    else:
-                        p.Intext = f'[*{pinin}*] Load In: *{p.InBook}  {p.InCon}*'
+                #print(f'Performing softwait_long for textboxx: {textboxx}')
+                #softwait_long(browser, textboxx)
+                #pintext = get_text(browser, textboxx)
+                pintext, error = get_result_message(browser)
+
+                if not error:
+                    pins = [int(s) for s in pintext.split() if s.isdigit()]
+                    try:
+                        pinin = pins[0]
+                        print(f'The load in pin is {pinin}')
+                        pinget = 1
+                        p.InPin = str(pinin)
+                        p.OutPin = '1'
+                        intext = p.Intext
+                        if hasinput(intext):
+                            p.Intext = f'[*{pinin}*] {intext}'
+                        else:
+                            p.Intext = f'[*{pinin}*] Load In: *{p.InBook}  {p.InCon}*'
+                        db.session.commit()
+                    except:
+                        print(f'Could not locate the PIN text for Load In {p.InCon}')
+                else:
+                    p.Intext = f'Error: {p.Intext}'
+                    p.Notes = f'Error: {pintext}'
+                    p.Active = 0
                     db.session.commit()
-                except:
-                    print(f'Could not locate the PIN text for Load In {p.InCon}')
+                    return
+
                 closethepopup(browser, closebutx)
 
             else:
@@ -351,6 +495,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem.send_keys(p.InCon)
+
+                # In this case there is no error check on the container until the submit button is hit
 
                 # Empty In Driver Data
                 note_text = fillapptdata(browser, d, p, thisdate)
@@ -363,20 +509,31 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem.submit()
 
                 #Empty In wait for textbox and extract
-                softwait_long(browser, textboxx)
-                pintext = get_text(browser, textboxx)
-                pins = [int(s) for s in pintext.split() if s.isdigit()]
-                pinin = pins[0]
-                print(f'The empty in pin is {pinin}')
-                pinget = 1
-                p.InPin = str(pinin)
-                p.OutPin = '1'
-                intext = p.Intext
-                if hasinput(intext):
-                    p.Intext = f'[*{pinin}*] {intext}'
+                #softwait_long(browser, textboxx)
+                pintext, error = get_result_message(browser)
+                #pintext = get_text(browser, textboxx)
+
+                if not error:
+                    pins = [int(s) for s in pintext.split() if s.isdigit()]
+                    pinin = pins[0]
+                    print(f'The empty in pin is {pinin}')
+                    pinget = 1
+                    p.InPin = str(pinin)
+                    p.OutPin = '1'
+                    intext = p.Intext
+                    if hasinput(intext):
+                        p.Intext = f'[*{pinin}*] {intext}'
+                    else:
+                        p.Intext = f'[*{pinin}*] Empty In: *{p.InCon}*'
+                    db.session.commit()
+
                 else:
-                    p.Intext = f'[*{pinin}*] Empty In: *{p.InCon}*'
-                db.session.commit()
+                    p.Intext = f'Error: {p.Intext}'
+                    p.Notes = f'Error: {pintext}'
+                    p.Active = 0
+                    db.session.commit()
+                    return
+
                 closethepopup(browser, closebutx)
 
         if outbox:
@@ -405,17 +562,6 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 )
             )
 
-            if 1 == 2:
-                print(f'URL at beginning of outbox section is {url}')
-                checkbox = browser.find_element(By.XPATH, '//*[@id="IsOutMove"]')
-                # Needs a Hard click
-                browser.execute_script("arguments[0].click();", checkbox)
-                # Wait for dropdown to be enabled
-                selectElem = WebDriverWait(browser, 16).until(
-                    lambda d: d.find_element(By.XPATH, '//*[@id="SecondaryMoveType"]') if
-                    d.find_element(By.XPATH, '//*[@id="SecondaryMoveType"]').is_enabled() else False
-                )
-
             if outtype == 'Empty Out':
                 Select(selectElem).select_by_value('ExportsEmptyOut')
 
@@ -424,13 +570,29 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     # If there is no inbox it is much easier to find the booking number section as there is only
                     # one of them, but also there are more elements to be filled out
 
-                    Select(selectElem).select_by_value('ExportsEmptyOut')
+                    #Select(selectElem).select_by_value('ExportsEmptyOut')
                     booking = WebDriverWait(browser, 20).until(
                         EC.element_to_be_clickable((By.ID, "BookingNumber"))
                     )
                     booking.clear()
                     booking.send_keys(p.OutBook)
                     booking.submit()
+                    # With no inbox there is the possibility of a bad booking we need to check for the
+                    # error right here
+
+
+                    text, error = wait_for_booking_result(browser)
+                    print(f'The empty out text is {text} and error is {error}')
+                    if error:
+                        print('Writing the error for booking with no inbound box to the database')
+                        pinget = 0
+                        p.Notes = f'Error: {text[:190]}'
+                        p.Active = 0
+                        modtext = f'Error on: {p.Outtext}'
+                        p.Outtext = modtext
+                        db.session.commit()
+                        return
+
                     #If there is no incoming box then we have to fill the driver data also
                     softwait(browser, '//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
                     note_text = fillapptdata(browser, d, p, thisdate)
@@ -459,6 +621,19 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     booking.send_keys(p.OutBook)
                     booking.submit()
 
+                    #Need to check here also if the booking exists
+                    text, error = wait_for_booking_result(browser)
+                    print(f'The empty out text is {text} and error is {error}')
+                    if error:
+                        print('Writing the error for booking with an inbound box to the database')
+                        pinget = 0
+                        p.Notes = f'Error: {text[:190]}'
+                        p.Active = 0
+                        modtext = f'Error on: {p.Outtext}'
+                        p.Outtext = modtext
+                        db.session.commit()
+                        return
+
                     submit_btn = WebDriverWait(browser, 20).until(
                         EC.element_to_be_clickable((
                             By.XPATH,
@@ -478,19 +653,31 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
 
                 print(f'Locating element with text: {textboxx}')
-                softwait_long(browser, textboxx)
-                pintext = get_text(browser, textboxx)
-                pins = [int(s) for s in pintext.split() if s.isdigit()]
-                pinout = pins[0]
-                print(f'The empty out pin is {pinout}')
-                pinget = 1
-                p.OutPin = str(pinout)
-                outtext = p.Outtext
-                if hasinput(outtext):
-                    p.Outtext = f'[*{pinout}*] {outtext}'
+                #softwait_long(browser, textboxx)
+                pintext, error = get_result_message(browser)
+
+                if not error:
+                    pins = [int(s) for s in pintext.split() if s.isdigit()]
+                    pinout = pins[0]
+                    print(f'The empty out pin is {pinout}')
+                    pinget = 1
+                    p.OutPin = str(pinout)
+                    outtext = p.Outtext
+                    if hasinput(outtext):
+                        p.Outtext = f'[*{pinout}*] {outtext}'
+                    else:
+                        p.Outtext = f'[*{pinout}*] Empty Out: *{p.OutBook}*'
+                    db.session.commit()
                 else:
-                    p.Outtext = f'[*{pinout}*] Empty Out: *{p.OutBook}*'
-                db.session.commit()
+                    #There is an error within the popup we need to display
+                    print('Writing the error for empty out with a good booking but no pintext found')
+                    pinget = 0
+                    p.Notes = f'Error: {pintext[:190]}'
+                    p.Active = 0
+                    modtext = f'Error on: {p.Outtext}'
+                    p.Outtext = modtext
+                    db.session.commit()
+
                 closethepopup(browser, closebutx)
 
             if outtype == 'Load Out':
@@ -507,6 +694,19 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 containerid.clear()
                 containerid.send_keys(p.OutCon)
                 containerid.submit()
+
+                #Check here for error on container pull, instant errors like unavailable
+                text, error = wait_for_container_result(browser)
+                print(f'The load out text is {text} and error is {error}')
+                if error:
+                    pinget = 0
+                    p.Notes = f'Error: {text[:190]}'
+                    p.Active = 0
+                    modtext = f'Error on: {p.Outtext}'
+                    p.Outtext = modtext
+                    db.session.commit()
+                    return
+
 
                 softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
 
@@ -525,21 +725,35 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem.submit()
 
                 # The popup box is different if there is an incoming box....
-                softwait_long(browser, textboxx)
-                pintext = get_text(browser, textboxx)
+                #softwait_long(browser, textboxx)
+                #pintext = get_text(browser, textboxx)
+                pintext, error = get_result_message(browser)
+
                 print(f'The pintext found here is: {pintext} in element {selectElem}')
-                pins = [int(s) for s in pintext.split() if s.isdigit()]
-                pinout = pins[0]
-                print(f'The load out pin is {pinout}')
-                pinget = 1
-                p.OutPin = str(pinout)
-                outtext = p.Outtext
-                if hasinput(outtext):
-                    p.Outtext = f'[*{pinout}*] {outtext}'
+
+                if not error:
+                    pins = [int(s) for s in pintext.split() if s.isdigit()]
+                    pinout = pins[0]
+                    print(f'The load out pin is {pinout}')
+                    pinget = 1
+                    p.OutPin = str(pinout)
+                    outtext = p.Outtext
+                    if hasinput(outtext):
+                        p.Outtext = f'[*{pinout}*] {outtext}'
+                    else:
+                        p.Outtext = f'[*{pinout}*] Load Out: *{p.OutBook}  {p.OutCon}*'
+                    db.session.commit()
+
                 else:
-                    p.Outtext = f'[*{pinout}*] Load Out: *{p.OutBook}  {p.OutCon}*'
-                db.session.commit()
-                completed = closethepopup(browser, closebutx)
+                    #There is an error within the popup we need to display
+                    pinget = 0
+                    p.Notes = f'Error: {pintext[:190]}'
+                    p.Active = 0
+                    modtext = f'Error on: {p.Outtext}'
+                    p.Outtext = modtext
+                    db.session.commit()
+
+                closethepopup(browser, closebutx)
 
 
     if pinget:
