@@ -292,6 +292,10 @@ def wait_for_booking_result(browser, timeout=5):
         "//div[@id='divBookingSummary']//td[normalize-space()='Booking was not found']"
     )
 
+    PAST_BOOKING_XPATH = (
+        "//div[@id='divBookingSummary']//td[normalize-space()='Past Booking']"
+    )
+
     BOOKING_FULL_XPATH = (
         "//span[contains(@class,'error') and "
         "contains(normalize-space(),'All appointments have been made')]"
@@ -311,6 +315,7 @@ def wait_for_booking_result(browser, timeout=5):
         lambda d: (
                 d.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
                 or d.find_elements(By.XPATH, BOOKING_FULL_XPATH)
+                or d.find_elements(By.XPATH, PAST_BOOKING_XPATH)
                 or d.find_elements(By.XPATH, CHASSIS_XPATH)
                 or d.find_elements(By.XPATH, ALL_IS_WELL_XPATH)
         )
@@ -318,6 +323,10 @@ def wait_for_booking_result(browser, timeout=5):
 
     # ❌ Booking not found
     err = browser.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
+    if err:
+        return err[0].text.strip(), True
+
+    err = browser.find_elements(By.XPATH, PAST_BOOKING_XPATH)
     if err:
         return err[0].text.strip(), True
 
