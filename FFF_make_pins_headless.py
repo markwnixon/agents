@@ -336,7 +336,7 @@ def wait_for_container_result(browser, timeout=15):
     #    "//span[contains(@class,'error') and "
     #    "contains(text(),'Unable to create pre-advise')]"
     # )
-    ERROR_SPANS_XPATH = "//span[contains(@class,'error')]"
+    ERROR_SPANS_XPATH = "//*[contains(@class,'error')]"
 
     # The element that only appears if container is accepted
     PIN_XPATH = "//*[@id='ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber']"
