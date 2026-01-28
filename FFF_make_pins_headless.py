@@ -265,7 +265,7 @@ def fillapptdata(browser, d, p, thisdate):
     softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
     selectElem.send_keys(thisdate)
-    selectElem.submit()
+    #selectElem.submit()
     #time.sleep(3)
 
     timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
