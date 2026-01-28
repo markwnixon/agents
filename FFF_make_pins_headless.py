@@ -263,10 +263,23 @@ def wait_for_timeslots(browser, xpath, timeout=20):
 
 def fillapptdata(browser, d, p, thisdate):
     softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
-    selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
-    selectElem.send_keys(thisdate)
+
+    dateElem = browser.find_element(By.ID, "DualInfo_NewApptDate")
+    dateElem.clear()
+    dateElem.send_keys(thisdate)
+
+    browser.execute_script("""
+        arguments[0].closest('form').submit();
+    """, dateElem)
+
+    WebDriverWait(browser, 10).until(
+        lambda d: d.find_element(By.ID, "DualInfo_NewTimeSlotKey").is_enabled()
+    )
+
+    #softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
+    #selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
+    #selectElem.send_keys(thisdate)
     #selectElem.submit()
-    #time.sleep(3)
 
     timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
                 '13:00-14:00', '14:00-15:00', '15:00-16:30', '15:00-17:30']
