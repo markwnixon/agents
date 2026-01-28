@@ -131,38 +131,67 @@ def softwait_long(browser, xpath, timeout=30):
     return None
 
 
-def hard_select_option(browser, select_id, option_text, timeout=20, retries=5):
+def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
     """
-    Performs a 'hard' selection on a select box:
-    - clicks into the select
-    - sends keys for the option
-    - triggers SPA JS
-    Retries if element is stale.
+    Headless-safe hard select:
+    - waits for enabled
+    - re-finds element every attempt
+    - sets value via JS
+    - fires change/input events
     """
-    for attempt in range(retries):
+
+    for attempt in range(1, retries + 1):
         print(f'Hard selection attempt {attempt}')
+
         try:
-            # Wait until the select element is clickable
-            selectElem = WebDriverWait(browser, timeout).until(
-                EC.element_to_be_clickable((By.ID, select_id))
+            # Wait for element to exist
+            WebDriverWait(browser, timeout).until(
+                EC.presence_of_element_located((By.ID, select_id))
             )
 
-            # Scroll into view (headless mode may need this)
-            browser.execute_script("arguments[0].scrollIntoView({block:'center'});", selectElem)
+            selectElem = browser.find_element(By.ID, select_id)
 
-            # Perform hard selection
-            action = ActionChains(browser)
-            action.move_to_element(selectElem).click().perform()
-            time.sleep(0.1)  # tiny pause to ensure focus
-            action.send_keys(option_text).perform()
+            # Wait until enabled (checkbox JS often toggles this)
+            WebDriverWait(browser, timeout).until(
+                lambda d: selectElem.is_enabled()
+            )
 
-            return
+            # Scroll + focus
+            browser.execute_script(
+                "arguments[0].scrollIntoView({block:'center'}); arguments[0].focus();",
+                selectElem
+            )
 
-        except StaleElementReferenceException:
-            # Element was replaced by JS, retry
-            time.sleep(0.2)
-        except TimeoutException:
-            time.sleep(0.2)
+            # Try normal Select first
+            try:
+                Select(selectElem).select_by_visible_text(option_text)
+            except Exception:
+                pass  # fallback to JS below
+
+            # 🔥 Force JS value + events (headless critical)
+            browser.execute_script("""
+                const sel = arguments[0];
+                const text = arguments[1];
+                const opts = [...sel.options];
+                const opt = opts.find(o => o.text.trim() === text);
+
+                if (!opt) throw "Option not found";
+
+                sel.value = opt.value;
+                sel.dispatchEvent(new Event('input', { bubbles: true }));
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            """, selectElem, option_text)
+
+            # Confirm selection stuck
+            WebDriverWait(browser, timeout).until(
+                lambda d: Select(d.find_element(By.ID, select_id))
+                          .first_selected_option.text.strip() == option_text
+            )
+
+            return  # success
+
+        except (StaleElementReferenceException, TimeoutException) as e:
+            time.sleep(0.3)
 
     raise Exception(f"Failed to hard-select '{option_text}' in select '{select_id}'")
 
@@ -454,6 +483,11 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             checkbox = browser.find_element(By.XPATH, '//*[@id="IsInMove"]')
             # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
+
+            WebDriverWait(browser, 10).until(
+                lambda d: d.find_element(By.ID, "PrimaryMoveType").is_enabled()
+            )
+
 
             if intype == 'Load In':
                 p.Notes = f'3) Started on Load In'
