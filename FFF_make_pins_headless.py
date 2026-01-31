@@ -689,10 +689,17 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         if outbox:
             # Had to make these changes for headless mode, it sometimes failed otherwise
             print(f'URL at beginning of outbox section is {url}')
-            checkbox = WebDriverWait(browser, 10).until(
-                EC.element_to_be_clickable((By.ID, "IsOutMove"))
-            )
+            #set_checkbox(browser, '//*[@id="IsInMove"]', checked=True) #Wait for and check the inbox
+            checkbox = browser.find_element(By.XPATH, out_checkbox_xp)
+            # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
+
+            Waitpageloadcomplete(browser)
+
+            #checkbox = WebDriverWait(browser, 10).until(
+            #    EC.element_to_be_clickable((By.ID, "IsOutMove"))
+            #)
+            #browser.execute_script("arguments[0].click();", checkbox)
 
             WebDriverWait(browser, 10).until(
                 lambda d: d.find_element(By.ID, "SecondaryMoveType").is_enabled()
