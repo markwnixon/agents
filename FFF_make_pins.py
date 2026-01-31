@@ -501,6 +501,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
                 #Empty In Start with Container number
                 hard_select_option(browser, "PrimaryMoveType", "Empty In")
+
+
                 softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem.send_keys(p.InCon)

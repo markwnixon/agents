@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import *
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 from utils import hasinput
 from selenium.webdriver.firefox.options import Options
 import logging
@@ -260,26 +261,26 @@ def wait_for_timeslots(browser, xpath, timeout=20):
 
     return WebDriverWait(browser, timeout).until(options_populated)
 
+def Waitpageloadcomplete(browser):
+    # Once the xpaths for elements at the start and end of form appear, we wait
+    # for the page load to complete:
 
-def fillapptdata(browser, d, p, thisdate):
-    softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
-
-    dateElem = browser.find_element(By.ID, "DualInfo_NewApptDate")
-    dateElem.clear()
-    dateElem.send_keys(thisdate)
-
-    browser.execute_script("""
-        arguments[0].closest('form').submit();
-    """, dateElem)
-
-    WebDriverWait(browser, 10).until(
-        lambda d: d.find_element(By.ID, "DualInfo_NewTimeSlotKey").is_enabled()
+    WebDriverWait(browser, 20).until(
+        lambda d: d.execute_script(
+            "return window.jQuery !== undefined && jQuery.active === 0"
+        )
     )
 
-    #softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
-    #selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
-    #selectElem.send_keys(thisdate)
-    #selectElem.submit()
+
+def fillapptdata(browser, d, p, thisdate):
+
+    # This the apptdata form
+    softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
+
+    selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
+    selectElem.send_keys(thisdate)
+    selectElem.submit()
+    #after date submit the timeslot becomes populated but lets wait for the page to finish loading first
 
     timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
                 '13:00-14:00', '14:00-15:00', '15:00-16:30', '15:00-17:30']
@@ -287,7 +288,11 @@ def fillapptdata(browser, d, p, thisdate):
     #softwait(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
     wait_for_timeslots(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
     selectElem = Select(browser.find_element_by_xpath('//*[@id="DualInfo_NewTimeSlotKey"]'))
-    #time.sleep(1)
+
+    print(f'Time Slot is {p.Timeslot}')
+    if 'Hold' in p.Timeslot:
+        return 'Error:  Did not select a timeslot for pin', True
+
     itime = p.Timeslot
     timeslotname = None
 
@@ -318,16 +323,18 @@ def fillapptdata(browser, d, p, thisdate):
                                 break
                         if timeslotname is not None: break
                 if timeslotname is not None: break
-
-
     selectElem.select_by_index(iselect)
+
+    # We now have the best available time slot selected
 
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_LicensePlateNumber"]')
     selectElem.send_keys(p.Tag)
+
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_DriverMobileNumber"]')
     selectElem.send_keys(d.Phone)
+
     ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.InChas}'
-    return ret_text
+    return ret_text, False
 
 def wait_for_booking_result(browser, timeout=5):
     BOOKING_NOT_FOUND_XPATH = (
@@ -472,6 +479,26 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     thisdate = datetime.strftime(p.Date + timedelta(0), '%m/%d/%Y')
     elog = []
     print(f'The pins will be created for date: {thisdate} for url {url}')
+    #list of xpaths and ids:
+    #preadvise In checkbox
+    in_checkbox_xp = '//*[@id="IsInMove"]'
+    #New pre-advise drop down select active after in checkbox
+    select_in_xp = '//*[@id="PrimaryMoveType"]'
+    # If select in is empty in then form appears with date, timeslot, plate, phone, container, chassis
+    # time does not populated until date populates
+    date_xp = '//*[@id="DualInfo_NewApptDate"]'
+    time_xp = '//*[@id="DualInfo_NewTimeSlotKey"]'
+    plate_xp = '//*[@id="DualInfo_LicensePlateNumber"]'
+    phone_xp = '//*[@id="DualInfo_DriverMobileNumber"]'
+    empty_in_container_xp = '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]'
+    # after empty in container number is entered, need to wait for ship line to populate automatially
+    empty_in_ssco_xp = '//*[@id="EmptyInAppts_0__ApptInfo_SscoCode"]'
+    # after all above populated, then after chassis entered the whole form will submit
+    empty_in_chassis_xp = '//*[@id="EmptyInAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]'
+
+    # For a load in then we have there xpaths:
+    full_in_container_xp = '// *[ @ id = "FullInAppts_0__ContainerNumber"]'
+    full_in_chassis_xp = '//*[@id="FullInAppts_0__ExpressGateModel_MainMove_ChassisNumber"]'
 
     #with Display():
         #display = Display(visible=0, size=(800, 1080))
@@ -479,12 +506,13 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     if 1 == 1:
         browser.get(url)
 
-        # Wait for the main appointment container to appear
+        # Wait for the main In-Panel to appear
         WebDriverWait(browser, 20).until(
-            EC.presence_of_element_located((By.XPATH, '//div[@id="divUpdatePanel-IN"]'))
+            EC.presence_of_element_located((By.XPATH, in_checkbox_xp))
         )
 
-        softwait(browser, '//*[@id="IsInMove"]')
+        # This just waits for visibility, no need if above is completed
+        #softwait(browser, '//*[@id="IsInMove"]')
         print('url=', url, flush=True)
         textboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
         closebutx = "//*[contains(@type,'button')]"
@@ -493,13 +521,16 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         if inbox:
             print(f'URL at beginning of inbox section is {url}')
             #set_checkbox(browser, '//*[@id="IsInMove"]', checked=True) #Wait for and check the inbox
-            checkbox = browser.find_element(By.XPATH, '//*[@id="IsInMove"]')
+            checkbox = browser.find_element(By.XPATH, in_checkbox_xp)
             # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
 
             WebDriverWait(browser, 10).until(
                 lambda d: d.find_element(By.ID, "PrimaryMoveType").is_enabled()
             )
+
+            #need to wait for page load here before moving forward or the appt information will not be settled
+            Waitpageloadcomplete(browser)
 
 
             if intype == 'Load In':
@@ -513,6 +544,9 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
                 selectElem.send_keys(p.InBook)
                 selectElem.submit()
+
+                # After booking is submitted the page will change based on that information
+                Waitpageloadcomplete(browser)
 
                 # We could have an issue with the booking for the load in so need to error check here
                 text, error = wait_for_booking_result(browser)
@@ -531,12 +565,13 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 #softwait(browser, '//*[@id="FullInAppts_0__ContainerNumber"]')
 
                 #Load In Driver info
-                note_text = fillapptdata(browser, d, p, thisdate)
+                note_text, error = fillapptdata(browser, d, p, thisdate)
 
                 #Load In Completion of container and chassis
-                selectElem = browser.find_element_by_xpath('//*[@id="FullInAppts_0__ContainerNumber"]')
+                selectElem = browser.find_element_by_xpath(full_in_container_xp)
                 selectElem.send_keys(p.InCon)
-                selectElem = browser.find_element_by_xpath('//*[@id="FullInAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
+                # For a load in there is no container look up after entry need to move on
+                selectElem = browser.find_element_by_xpath(full_in_chassis_xp)
                 chas = p.InChas
                 if not hasinput(chas): chas = f'{scac}007'
                 selectElem.send_keys(chas)
@@ -573,6 +608,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
                 closethepopup(browser, closebutx)
 
+            #This is the empty in section
             else:
 
                 # Empty In Start with Container number
@@ -580,21 +616,42 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 db.session.commit()
 
                 hard_select_option(browser, "PrimaryMoveType", "Empty In")
-                softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
-                selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
+                print(f'Hard Select Completed')
+                p.Notes = f'Empty In Hard Select Completed'
+                db.session.commit()
+
+                Waitpageloadcomplete(browser)
+
+                # Empty In Appointment Data, Appt Data will go from Date to Chassis, but function
+                # Just fills in the date, time, tag, and phone number then returns for
+                # Rest of form
+                note_text, error = fillapptdata(browser, d, p, thisdate)
+
+                softwait(browser, empty_in_container_xp)
+                selectElem = browser.find_element_by_xpath(empty_in_container_xp)
                 selectElem.send_keys(p.InCon)
+                selectElem.send_keys(Keys.TAB)
 
-                # In this case there is no error check on the container until the submit button is hit
+                # With container entered the form must validate the container info
+                # and will then populate several form boxes
+                # But if the container cannot be returned we will get an error message here
 
-                # Empty In Driver Data
-                note_text = fillapptdata(browser, d, p, thisdate)
+                # Once we move to next block the form will populate the SSCO for the container selected
+                elem = WebDriverWait(browser, 20).until(
+                    lambda d: (e := d.find_element(By.XPATH, empty_in_ssco_xp)) and
+                              (e if e.get_attribute("value") else False)
+                )
+                value = elem.get_attribute("value")
+                print("SSCO value:", value)
 
                 #Empty In Completion for Chassis
-                selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]')
+                chasElem = browser.find_element_by_xpath(empty_in_chassis_xp)
                 chas = p.InChas
                 if not hasinput(chas): chas = f'{scac}007'
-                selectElem.send_keys(chas)
-                selectElem.submit()
+                chasElem.send_keys(chas)
+                # Need to wait here for loading, otherwise the SSL that goes with the container may not populate
+                Waitpageloadcomplete(browser)
+                chasElem.submit()
 
                 # Empty In wait for textbox and extract
                 # softwait_long(browser, textboxx)
@@ -679,7 +736,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
                     #If there is no incoming box then we have to fill the driver data also
                     softwait(browser, '//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
-                    note_text = fillapptdata(browser, d, p, thisdate)
+                    note_text, error = fillapptdata(browser, d, p, thisdate)
                     selectElem = browser.find_element_by_xpath('//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
                     selectElem.send_keys(p.OutChas)
                     selectElem.submit()
@@ -795,28 +852,38 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     db.session.commit()
                     return
 
-                softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
+
+                #softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
 
                 # Only fill in the driver/truck data if no in box, otherwise it is there already
-                if not inbox: note_text = fillapptdata(browser, d, p, thisdate)
-
-                selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
-                selectElem.send_keys(p.OutBook)
-
-                # Only input the chassis number for the outbox if there is no inbox
                 if not inbox:
+                    note_text, error = fillapptdata(browser, d, p, thisdate)
+                    if error:
+                        pinget = 0
+                        p.Notes = note_text
+                        db.session.commit()
+                        return
+
+                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
+                    selectElem.send_keys(p.OutBook)
                     selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]')
                     chas = p.OutChas
                     if not hasinput(chas): chas = f'{scac}007'
                     selectElem.send_keys(chas)
+                    selectElem.submit()
 
-                selectElem.submit()
+                else:
+                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
+                    selectElem.send_keys(p.OutBook)
+                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]')
+                    chas = p.OutChas
+                    if not hasinput(chas): chas = f'{scac}007'
+                    selectElem.send_keys(chas)
+                    selectElem.submit()
+
 
                 # The popup box is different if there is an incoming box....
-                #softwait_long(browser, textboxx)
-                #pintext = get_text(browser, textboxx)
                 pintext, error = get_result_message(browser)
-
                 print(f'The pintext found here is: {pintext} in element {selectElem}')
 
                 if not error:
@@ -826,18 +893,20 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     pinget = 1
                     p.OutPin = str(pinout)
                     outtext = p.Outtext
+                    outtext = outtext.replace("Error on: ", "")
                     if hasinput(outtext):
                         p.Outtext = f'[*{pinout}*] {outtext}'
                     else:
                         p.Outtext = f'[*{pinout}*] Load Out: *{p.OutBook}  {p.OutCon}*'
                     db.session.commit()
-
                 else:
                     #There is an error within the popup we need to display
                     pinget = 0
                     p.Notes = f'Error: {pintext[:190]}'
                     p.Active = 0
-                    modtext = f'Error on: {p.Outtext}'
+                    outtext = p.Outtext
+                    outtext = outtext.replace("Error on: ", "")
+                    modtext = f'Error on: {outtext}'
                     p.Outtext = modtext
                     db.session.commit()
 
@@ -851,6 +920,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             p.Intext = f'Bare chassis in {p.InChas}'
             elog.append(f'Bare chassis in {p.InChas}')
         p.Phone = d.Phone
+        print(f'At end the note text is {note_text} and error is {error}')
         p.Notes = note_text
         db.session.commit()
 
