@@ -274,12 +274,22 @@ def Waitpageloadcomplete(browser):
 
 def fillapptdata(browser, d, p, thisdate):
 
-    # This the apptdata form
-    softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
+    print(f'This date is {thisdate}')
 
-    selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
-    selectElem.send_keys(thisdate)
-    selectElem.submit()
+    if 1 == 2:
+        softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
+        selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_NewApptDate"]')
+        selectElem.send_keys(thisdate)
+        selectElem.submit()
+    softwait(browser, '//*[@id="DualInfo_NewApptDate"]')
+    dateElem = browser.find_element_by_id("DualInfo_NewApptDate")
+    dateElem.click()
+    browser.execute_script("arguments[0].focus();", dateElem)
+    for ch in thisdate:
+        dateElem.send_keys(ch)
+        time.sleep(0.08)
+    dateElem.send_keys(Keys.TAB)
+
     #after date submit the timeslot becomes populated but lets wait for the page to finish loading first
 
     timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
@@ -328,6 +338,7 @@ def fillapptdata(browser, d, p, thisdate):
     # We now have the best available time slot selected
 
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_LicensePlateNumber"]')
+    selectElem.clear()
     selectElem.send_keys(p.Tag)
 
     selectElem = browser.find_element_by_xpath('//*[@id="DualInfo_DriverMobileNumber"]')
@@ -546,13 +557,12 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 # This tested out for Load In
                 hard_select_option(browser, "PrimaryMoveType", "Full In")
 
+                Waitpageloadcomplete(browser)
+
                 softwait(browser, '//*[@id="BookingNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
                 selectElem.send_keys(p.InBook)
                 selectElem.submit()
-
-                # After booking is submitted the page will change based on that information
-                Waitpageloadcomplete(browser)
 
                 # We could have an issue with the booking for the load in so need to error check here
                 text, error = wait_for_booking_result(browser)
