@@ -500,6 +500,12 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     full_in_container_xp = '// *[ @ id = "FullInAppts_0__ContainerNumber"]'
     full_in_chassis_xp = '//*[@id="FullInAppts_0__ExpressGateModel_MainMove_ChassisNumber"]'
 
+    #For the outbound moves
+    #preadvise Out checkbox
+    out_checkbox_xp = '//*[@id="IsOutMove"]'
+    #New pre-advise drop down select active after in checkbox
+    select_out_xp = '//*[@id="SecondaryMoveType"]'
+
     #with Display():
         #display = Display(visible=0, size=(800, 1080))
         #display.start()
@@ -688,29 +694,20 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             )
             browser.execute_script("arguments[0].click();", checkbox)
 
-            WebDriverWait(browser, 20).until(
-                lambda d: d.execute_script("""
-                    return !window.Sys ||
-                           !Sys.WebForms ||
-                           !Sys.WebForms.PageRequestManager.getInstance().get_isInAsyncPostBack();
-                """)
+            WebDriverWait(browser, 10).until(
+                lambda d: d.find_element(By.ID, "SecondaryMoveType").is_enabled()
             )
-
-            selectElem = WebDriverWait(browser, 20).until(
-                EC.presence_of_element_located((By.ID, "SecondaryMoveType"))
-            )
-
-            WebDriverWait(browser, 20).until(
-                lambda d: d.execute_script(
-                    "return !document.getElementById('SecondaryMoveType').disabled;"
-                )
-            )
+            #need to wait for page load here before moving forward or the appt information will not be settled
+            Waitpageloadcomplete(browser)
 
             if outtype == 'Empty Out':
                 p.Notes = f'5) Started on Empty Out'
                 db.session.commit()
 
-                Select(selectElem).select_by_value('ExportsEmptyOut')
+                # This tested out for Load In
+                hard_select_option(browser, "SecondaryMoveType", "Empty Out")
+
+                #Select(selectElem).select_by_value('ExportsEmptyOut')
 
                 # We need to know if inbox because there is different about of things to do depending...
                 if not inbox:
@@ -826,7 +823,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 p.Notes = f'6) Started on Load Out'
                 db.session.commit()
 
-                Select(selectElem).select_by_value('ImportsFullOut')
+                #Select(selectElem).select_by_value('ImportsFullOut')
+                hard_select_option(browser, "SecondaryMoveType", "Import Out")
 
                 # Scope the container number input to the OUT panel
                 panel_xpath = "//div[@id='divUpdatePanel-OUT']"
