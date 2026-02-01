@@ -209,6 +209,7 @@ def hard_select_option(browser, select_id, option_text, timeout=20, retries=4):
         f"after {retries} attempts"
     )
 
+
 def hard_select_option_2(browser, select_id, option_text, timeout=20, retries=3):
 
     for attempt in range(1, retries + 1):
