@@ -272,6 +272,30 @@ def Waitpageloadcomplete(browser):
     )
 
 
+def type_entry(browser, xp, text, ending):
+    print(f'Typing into xpath {xp} the text {text}')
+
+    elem = WebDriverWait(browser, 10).until(
+        lambda d: d.find_element(By.XPATH, xp)
+    )
+
+    elem.click()
+
+    # Wait until browser confirms focus
+    WebDriverWait(browser, 5).until(
+        lambda d: d.execute_script("return document.activeElement === arguments[0];", elem)
+    )
+
+    for ch in text:
+        elem.send_keys(ch)
+        time.sleep(0.08)
+
+    if ending == 'TAB':
+        elem.send_keys(Keys.TAB)
+    elif ending == 'ENTER':
+        elem.send_keys(Keys.ENTER)
+
+
 def fillapptdata(browser, d, p, thisdate):
 
     print(f'This date is {thisdate}')
@@ -508,6 +532,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     empty_in_chassis_xp = '//*[@id="EmptyInAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]'
 
     # For a load in then we have there xpaths:
+    full_in_booking_xp = '//*[@id="BookingNumber"]'
     full_in_container_xp = '// *[ @ id = "FullInAppts_0__ContainerNumber"]'
     full_in_chassis_xp = '//*[@id="FullInAppts_0__ExpressGateModel_MainMove_ChassisNumber"]'
 
@@ -516,10 +541,15 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     out_checkbox_xp = '//*[@id="IsOutMove"]'
     #New pre-advise drop down select active after in checkbox
     select_out_xp = '//*[@id="SecondaryMoveType"]'
+    #Empty Out Chassis
+    empty_out_chassis_xp = '//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]'
+    # Load Out
+    load_out_bolpin_xp = '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]'
+    load_out_chassis_xp = '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]'
 
-    #with Display():
-        #display = Display(visible=0, size=(800, 1080))
-        #display.start()
+    textboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
+    closebutx = "//*[contains(@type,'button')]"
+
     if 1 == 1:
         browser.get(url)
 
@@ -531,8 +561,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         # This just waits for visibility, no need if above is completed
         #softwait(browser, '//*[@id="IsInMove"]')
         print('url=', url, flush=True)
-        textboxx = "//*[contains(text(),'Pre-Advise created successfully')]"
-        closebutx = "//*[contains(@type,'button')]"
+
         print(f'inbox is {inbox}')
 
         if inbox:
@@ -559,10 +588,11 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
                 Waitpageloadcomplete(browser)
 
-                softwait(browser, '//*[@id="BookingNumber"]')
-                selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
-                selectElem.send_keys(p.InBook)
-                selectElem.submit()
+                softwait(browser, full_in_booking_xp)
+                type_entry(browser, full_in_booking_xp, p.InBook, 'ENTER')
+                #selectElem = browser.find_element_by_xpath('//*[@id="BookingNumber"]')
+                #selectElem.send_keys(p.InBook)
+                #selectElem.submit()
 
                 # We could have an issue with the booking for the load in so need to error check here
                 text, error = wait_for_booking_result(browser)
@@ -584,14 +614,16 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 note_text, error = fillapptdata(browser, d, p, thisdate)
 
                 #Load In Completion of container and chassis
-                selectElem = browser.find_element_by_xpath(full_in_container_xp)
-                selectElem.send_keys(p.InCon)
+                type_entry(browser, full_in_container_xp, p.InCon, 'TAB')
+                #selectElem = browser.find_element_by_xpath(full_in_container_xp)
+                #selectElem.send_keys(p.InCon)
                 # For a load in there is no container look up after entry need to move on
-                selectElem = browser.find_element_by_xpath(full_in_chassis_xp)
                 chas = p.InChas
                 if not hasinput(chas): chas = f'{scac}007'
-                selectElem.send_keys(chas)
-                selectElem.submit()
+                type_entry(browser, full_in_chassis_xp, chas, 'ENTER')
+                #selectElem = browser.find_element_by_xpath(full_in_chassis_xp)
+                #selectElem.send_keys(chas)
+                #selectElem.submit()
 
                 #Load In wait for textbox and extract
                 #print(f'Performing softwait for textboxx: {textboxx}')
@@ -647,6 +679,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 selectElem = browser.find_element_by_xpath(empty_in_container_xp)
                 selectElem.send_keys(p.InCon)
                 selectElem.send_keys(Keys.TAB)
+                Waitpageloadcomplete(browser)
 
                 # With container entered the form must validate the container info
                 # and will then populate several form boxes
@@ -661,13 +694,13 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 print("SSCO value:", value)
 
                 #Empty In Completion for Chassis
-                chasElem = browser.find_element_by_xpath(empty_in_chassis_xp)
                 chas = p.InChas
                 if not hasinput(chas): chas = f'{scac}007'
-                chasElem.send_keys(chas)
+                type_entry(browser, empty_in_chassis_xp, chas, 'ENTER')
+                #chasElem = browser.find_element_by_xpath(empty_in_chassis_xp)
+                #chasElem.send_keys(chas)
                 # Need to wait here for loading, otherwise the SSL that goes with the container may not populate
-                Waitpageloadcomplete(browser)
-                chasElem.submit()
+                #chasElem.submit()
 
                 # Empty In wait for textbox and extract
                 # softwait_long(browser, textboxx)
@@ -749,11 +782,12 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                         return
 
                     #If there is no incoming box then we have to fill the driver data also
-                    softwait(browser, '//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
+                    softwait(browser, empty_out_chassis_xp)
                     note_text, error = fillapptdata(browser, d, p, thisdate)
-                    selectElem = browser.find_element_by_xpath('//*[@id="EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber"]')
-                    selectElem.send_keys(p.OutChas)
-                    selectElem.submit()
+                    type_entry(browser, empty_out_chassis_xp, p.OutChas, 'ENTER')
+                    #selectElem = browser.find_element_by_xpath(empty_out_chassis_xp)
+                    #selectElem.send_keys(p.OutChas)
+                    #selectElem.submit()
                 else:
                     # If there is an inbox, then there is the possibility of two elements with ID=bookingnumber,
                     # and that greatly complicates selenium search to find correct element, we need to restrain
@@ -879,22 +913,22 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                         db.session.commit()
                         return
 
-                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
+                    selectElem = browser.find_element_by_xpath(load_out_bolpin_xp)
                     selectElem.send_keys(p.OutBook)
-                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]')
+
+                    selectElem = browser.find_element_by_xpath(load_out_chassis_xp)
                     chas = p.OutChas
                     if not hasinput(chas): chas = f'{scac}007'
-                    selectElem.send_keys(chas)
-                    selectElem.submit()
+                    type_entry(browser, load_out_chassis_xp, chas, 'ENTER')
+                    #selectElem.send_keys(chas)
+                    #selectElem.submit()
 
                 else:
-                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
-                    selectElem.send_keys(p.OutBook)
-                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_ChassisNumber"]')
-                    chas = p.OutChas
-                    if not hasinput(chas): chas = f'{scac}007'
-                    selectElem.send_keys(chas)
-                    selectElem.submit()
+                    selectElem = browser.find_element_by_xpath(load_out_bolpin_xp)
+                    type_entry(browser, load_out_bolpin_xp, p.OutBook, 'ENTER')
+                    #selectElem.send_keys(p.OutBook)
+                    #selectElem.submit()
+
 
 
                 # The popup box is different if there is an incoming box....
