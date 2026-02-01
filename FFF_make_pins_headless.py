@@ -487,6 +487,22 @@ def wait_for_container_result(browser, timeout=15):
     # Otherwise success
     return 'continue', False
 
+def wait_for_stable_element(browser, by, value, timeout=20):
+    end = time.time() + timeout
+    last = None
+
+    while time.time() < end:
+        elem = browser.find_element(by, value)
+        current = browser.execute_script(
+            "return arguments[0].outerHTML;", elem
+        )
+        if current == last:
+            return elem
+        last = current
+        time.sleep(0.2)
+
+    raise TimeoutException("Element never stabilized")
+
 def logonfox(err):
     username = usernames['gate']
     password = passwords['gate']
@@ -603,14 +619,15 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
 
-            Waitpageloadcomplete(browser)
+            #Waitpageloadcomplete(browser)
+            elem = wait_for_stable_element(browser, By.ID, "PrimaryMoveType")
 
-            WebDriverWait(browser, 10).until(
-                lambda d: d.find_element(By.ID, "PrimaryMoveType").is_enabled()
-            )
+            #WebDriverWait(browser, 10).until(
+            #    lambda d: d.find_element(By.ID, "PrimaryMoveType").is_enabled()
+            #)
 
             #need to wait for page load here before moving forward or the appt information will not be settled
-            Waitpageloadcomplete(browser)
+            #Waitpageloadcomplete(browser)
 
 
             if intype == 'Load In':
