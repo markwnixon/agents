@@ -131,8 +131,68 @@ def softwait_long(browser, xpath, timeout=30):
     print("Timeout waiting for toast to reappear")
     return None
 
-
 def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
+
+    for attempt in range(1, retries + 1):
+        print(f'Hard selection attempt {attempt}')
+
+        try:
+            # Always re-find via locator (never reuse element)
+            locator = (By.ID, select_id)
+
+            WebDriverWait(browser, timeout).until(
+                EC.element_to_be_clickable(locator)
+            )
+
+            selectElem = browser.find_element(*locator)
+
+            # Scroll + focus (geometry matters in headless)
+            browser.execute_script("""
+                arguments[0].scrollIntoView({block:'center'});
+                arguments[0].focus();
+            """, selectElem)
+
+            # Yield to event loop (critical in headless)
+            browser.execute_script("return new Promise(r => requestAnimationFrame(r));")
+
+            # Try native Select first
+            try:
+                Select(selectElem).select_by_visible_text(option_text)
+            except Exception:
+                pass
+
+            # JS fallback with full framework wake-up
+            browser.execute_script("""
+                const sel = arguments[0];
+                const text = arguments[1];
+
+                const opt = [...sel.options].find(o => o.text.trim() === text);
+                if (!opt) throw "Option not found";
+
+                sel.selectedIndex = opt.index;
+
+                sel.dispatchEvent(new Event('mousedown', { bubbles: true }));
+                sel.dispatchEvent(new Event('input', { bubbles: true }));
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                sel.dispatchEvent(new Event('blur', { bubbles: true }));
+            """, selectElem, option_text)
+
+            # Confirm via fresh lookup
+            WebDriverWait(browser, timeout).until(
+                lambda d: Select(d.find_element(*locator))
+                    .first_selected_option.text.strip() == option_text
+            )
+
+            return  # ✅ success
+
+        except (StaleElementReferenceException, TimeoutException) as e:
+            print(f"Retrying after failure: {type(e).__name__}")
+            time.sleep(0.5)
+
+    raise Exception(f"Failed to hard-select '{option_text}' in select '{select_id}'")
+
+
+def hard_select_option_old(browser, select_id, option_text, timeout=20, retries=3):
     """
     Headless-safe hard select:
     - waits for enabled
