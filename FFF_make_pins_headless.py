@@ -603,6 +603,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
 
+            Waitpageloadcomplete(browser)
+
             WebDriverWait(browser, 10).until(
                 lambda d: d.find_element(By.ID, "PrimaryMoveType").is_enabled()
             )
