@@ -131,7 +131,85 @@ def softwait_long(browser, xpath, timeout=30):
     print("Timeout waiting for toast to reappear")
     return None
 
-def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
+def hard_select_option(browser, select_id, option_text, timeout=20, retries=4):
+
+    locator = (By.ID, select_id)
+
+    for attempt in range(1, retries + 1):
+        print(f'Hard selection attempt {attempt}')
+
+        try:
+            # Wait for select to exist
+            WebDriverWait(browser, timeout).until(
+                EC.presence_of_element_located(locator)
+            )
+
+            # Wait until desired option is present (CRITICAL)
+            WebDriverWait(browser, timeout).until(
+                lambda d: any(
+                    o.text.strip() == option_text
+                    for o in d.find_element(*locator).find_elements(By.TAG_NAME, "option")
+                )
+            )
+
+            selectElem = browser.find_element(*locator)
+
+            # Scroll + focus
+            browser.execute_script("""
+                arguments[0].scrollIntoView({block:'center'});
+                arguments[0].focus();
+            """, selectElem)
+
+            # Yield browser render + microtasks
+            browser.execute_script("""
+                return new Promise(resolve => {
+                    requestAnimationFrame(() => setTimeout(resolve, 0));
+                });
+            """)
+
+            # Native select first
+            try:
+                Select(selectElem).select_by_visible_text(option_text)
+            except Exception:
+                pass
+
+            # JS fallback with full lifecycle
+            browser.execute_script("""
+                const sel = arguments[0];
+                const text = arguments[1];
+
+                const opt = [...sel.options].find(o => o.text.trim() === text);
+                if (!opt) return false;
+
+                sel.selectedIndex = opt.index;
+
+                ['mousedown','input','change','blur'].forEach(evt =>
+                    sel.dispatchEvent(new Event(evt, { bubbles: true }))
+                );
+
+                return true;
+            """, selectElem, option_text)
+
+            # Confirm on a FRESH element (detect re-render)
+            WebDriverWait(browser, timeout).until(
+                lambda d: (
+                    (sel := Select(d.find_element(*locator)))
+                    and sel.first_selected_option.text.strip() == option_text
+                )
+            )
+
+            return  # ✅ success
+
+        except (TimeoutException, StaleElementReferenceException) as e:
+            print(f"Retrying after failure: {type(e).__name__}")
+            time.sleep(0.6)
+
+    raise Exception(
+        f"Failed to hard-select '{option_text}' in select '{select_id}' "
+        f"after {retries} attempts"
+    )
+
+def hard_select_option_2(browser, select_id, option_text, timeout=20, retries=3):
 
     for attempt in range(1, retries + 1):
         print(f'Hard selection attempt {attempt}')
