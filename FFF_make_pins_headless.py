@@ -272,7 +272,7 @@ def Waitpageloadcomplete(browser):
     )
 
 
-def type_entry(browser, xp, text, ending):
+def type_entryx(browser, xp, text, ending):
     print(f'Typing into xpath {xp} the text {text}')
 
     elem = WebDriverWait(browser, 10).until(
@@ -295,6 +295,38 @@ def type_entry(browser, xp, text, ending):
     elif ending == 'ENTER':
         elem.send_keys(Keys.ENTER)
 
+def type_entry(browser, xp, text, ending):
+    print(f'Typing into xpath {xp} the text {text}')
+
+    elem = WebDriverWait(browser, 10).until(
+        EC.element_to_be_clickable((By.XPATH, xp))
+    )
+
+    # Ensure element is actually in view (critical in headless)
+    browser.execute_script(
+        "arguments[0].scrollIntoView({block:'center'});", elem
+    )
+
+    # Small settle delay (prevents <html> intercepts)
+    time.sleep(0.1)
+
+    elem.click()
+
+    # Verify real focus
+    WebDriverWait(browser, 5).until(
+        lambda d: d.execute_script(
+            "return document.activeElement === arguments[0];", elem
+        )
+    )
+
+    for ch in text:
+        elem.send_keys(ch)
+        time.sleep(0.08)
+
+    if ending == 'TAB':
+        elem.send_keys(Keys.TAB)
+    elif ending == 'ENTER':
+        elem.send_keys(Keys.ENTER)
 
 def fillapptdata(browser, d, p, thisdate):
 
