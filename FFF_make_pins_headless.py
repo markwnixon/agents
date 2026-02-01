@@ -788,18 +788,20 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             # Needs a Hard click
             browser.execute_script("arguments[0].click();", checkbox)
 
-            Waitpageloadcomplete(browser)
+            elem = wait_for_stable_element(browser, By.ID, "SecondaryMoveType")
+
+            #Waitpageloadcomplete(browser)
 
             #checkbox = WebDriverWait(browser, 10).until(
             #    EC.element_to_be_clickable((By.ID, "IsOutMove"))
             #)
             #browser.execute_script("arguments[0].click();", checkbox)
 
-            WebDriverWait(browser, 10).until(
-                lambda d: d.find_element(By.ID, "SecondaryMoveType").is_enabled()
-            )
+            #WebDriverWait(browser, 10).until(
+            #   lambda d: d.find_element(By.ID, "SecondaryMoveType").is_enabled()
+            #)
             #need to wait for page load here before moving forward or the appt information will not be settled
-            Waitpageloadcomplete(browser)
+            #Waitpageloadcomplete(browser)
 
             if outtype == 'Empty Out':
                 p.Notes = f'5) Started on Empty Out'
