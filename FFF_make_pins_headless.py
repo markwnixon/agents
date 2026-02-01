@@ -542,7 +542,63 @@ def fillapptdata(browser, d, p, thisdate):
     ret_text = f'Pin made for {p.Driver} in Unit {p.Unit} time slot {timeslotname} chassis {p.InChas}'
     return ret_text, False
 
-def wait_for_booking_result(browser, timeout=5):
+def wait_for_booking_result(browser, timeout=10):
+
+    BOOKING_NOT_FOUND_XPATH = (
+        "//div[@id='divBookingSummary']//td[normalize-space()='Booking was not found']"
+    )
+    PAST_BOOKING_XPATH = (
+        "//div[@id='divBookingSummary']//td[normalize-space()='Past Booking']"
+    )
+    BOOKING_FULL_XPATH = (
+        "//span[contains(@class,'error') and "
+        "contains(normalize-space(),'All appointments have been made')]"
+    )
+    CHASSIS_XPATH = (
+        "//*[@id='EmptyOutAppts_0__ExpressGateModel_MainMove_ChassisNumber']"
+    )
+    ALL_IS_WELL_XPATH = (
+        "//*[@id='FullInAppts_0__ContainerNumber']"
+    )
+
+    SUMMARY_CONTAINER = (By.ID, "divBookingSummary")
+
+    wait = WebDriverWait(browser, timeout)
+
+    # 1️⃣ Wait until booking summary exists OR success inputs appear
+    wait.until(
+        lambda d: (
+            d.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
+            or d.find_elements(By.XPATH, BOOKING_FULL_XPATH)
+            or d.find_elements(By.XPATH, PAST_BOOKING_XPATH)
+            or d.find_elements(By.XPATH, CHASSIS_XPATH)
+            or d.find_elements(By.XPATH, ALL_IS_WELL_XPATH)
+            or d.find_elements(*SUMMARY_CONTAINER)
+        )
+    )
+
+    # 2️⃣ Give SPA a beat to settle (critical in headless)
+    browser.execute_script(
+        "return new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));"
+    )
+
+    # ❌ Booking not found
+    err = browser.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
+    if err:
+        return err[0].text.strip(), True
+
+    err = browser.find_elements(By.XPATH, PAST_BOOKING_XPATH)
+    if err:
+        return err[0].text.strip(), True
+
+    err = browser.find_elements(By.XPATH, BOOKING_FULL_XPATH)
+    if err:
+        return err[0].text.strip(), True
+
+    # ✅ If no error appeared, assume success (even if inputs lag)
+    return 'continue', False
+
+def wait_for_booking_result_old(browser, timeout=5):
     BOOKING_NOT_FOUND_XPATH = (
         "//div[@id='divBookingSummary']//td[normalize-space()='Booking was not found']"
     )
