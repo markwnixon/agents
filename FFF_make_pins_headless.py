@@ -484,6 +484,7 @@ def logonfox(err, max_login_time=45):
         wait.until(lambda d: 'logon' not in d.current_url)
         logonyes = 1
         newurl = browser.current_url
+        newurl = newurl + '#/appointment/LimitedPreAdvise'
         return browser, newurl, logonyes, logontrys, err
 
     except TimeoutException as e:
@@ -564,7 +565,8 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     closebutx = "//*[contains(@type,'button')]"
 
     try:
-
+        # This just waits for visibility, no need if above is completed
+        print('url=', url, flush=True)
         browser.get(url)
 
         # Wait for the main In-Panel to appear
@@ -572,8 +574,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             EC.presence_of_element_located((By.XPATH, in_checkbox_xp))
         )
 
-        # This just waits for visibility, no need if above is completed
-        print('url=', url, flush=True)
+
 
         print(f'inbox is {inbox}')
 
@@ -1054,7 +1055,7 @@ else:
     elog = []
     browser = None
 
-    try:
+    if 1 == 1:
         with Display():
             browser, url, logonyes, logontrys, err = logonfox(err)
 
@@ -1107,7 +1108,8 @@ else:
                 pdat.Notes = f'Failed because driver not found'
                 db.session.commit()
 
-    except Exception as e:
+    if 1 == 2:
+    #except Exception as e:
         print("ERROR during Selenium run:", e)
 
         try:
@@ -1115,8 +1117,8 @@ else:
             db.session.commit()
         except Exception:
             pass
-
-    finally:
+    if 1 == 2:
+    #finally:
         if browser:
             try:
                 browser.quit()
@@ -1130,6 +1132,7 @@ else:
                 pass
 
 
-    #browser.quit()
+if browser:
+    browser.quit()
 
-#if nt == 'remote': tunnel.stop()
+if nt == 'remote': tunnel.stop()
