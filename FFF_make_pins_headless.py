@@ -521,7 +521,7 @@ def section_timer(name, timeout=30):
 def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
     pinget = 0
     browser.set_page_load_timeout(30)
-    browser.set_script_timeout(30)
+    browser.set_script_timeout(120)
     note_text = None
     error = None
     thisdate = datetime.strftime(p.Date + timedelta(0), '%m/%d/%Y')
@@ -581,7 +581,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             print(f'URL at beginning of inbox section is {url}')
             #set_checkbox(browser, '//*[@id="IsInMove"]', checked=True) #Wait for and check the inbox
 
-            with section_timer("inbox processing", 30):
+            with section_timer("inbox processing", 60):
                 checkbox = browser.find_element(By.XPATH, in_checkbox_xp)
                 browser.execute_script("arguments[0].click();", checkbox)
                 Waitpageloadcomplete(browser)
@@ -723,7 +723,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
             # Had to make these changes for headless mode, it sometimes failed otherwise
             print(f'URL at beginning of outbox section is {url}')
 
-            with section_timer("outbox processing", 30):
+            with section_timer("outbox processing", 60):
                 checkbox = browser.find_element(By.XPATH, out_checkbox_xp)
                 browser.execute_script("arguments[0].click();", checkbox)
                 Waitpageloadcomplete(browser)
@@ -935,7 +935,7 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
 
     except SectionTimeout as e:
         print("SECTION TIMEOUT:", e)
-        p.Notes = str(e)[:190]
+        p.Notes = 'Section Timeout Error'
         p.Active = 0
         db.session.commit()
         return ["Timeout"]
