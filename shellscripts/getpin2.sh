@@ -29,11 +29,11 @@ echo "----------------------------------------"
 #"$PYTHON" FFF_make_pins_headless.py \
 #    --scac "$SCAC" \
 #    --pinid "$PINID"
+
 echo "getpin2.sh which runs python code FFF_make_pins_headless.py"
 echo "deployed for $USER"
-cd /home/$USER/flask
+cd "$AGENTS_DIR"
 source flaskenv/bin/activate
-cd /home/$USER/flask/agents
 python3 FFF_make_pins_headless.py "$SCAC" "$PINID"
 
 EXIT_CODE=$?

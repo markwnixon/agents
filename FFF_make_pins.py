@@ -216,7 +216,7 @@ def fillapptdata(browser, d, p, thisdate):
     #time.sleep(3)
 
     timedata = ['06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
-                '13:00-14:00', '14:00-15:00', '15:00-16:30', '15:00-17:30']
+                '13:00-14:00', '14:00-15:00', '15:00-16:30', '15:00-17:30', '15:00-16:00']
 
     #softwait(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
     wait_for_timeslots(browser, '//*[@id="DualInfo_NewTimeSlotKey"]')
