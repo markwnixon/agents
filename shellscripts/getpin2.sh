@@ -32,8 +32,9 @@ echo "----------------------------------------"
 
 echo "getpin2.sh which runs python code FFF_make_pins_headless.py"
 echo "deployed for $USER"
-cd "$AGENTS_DIR"
+cd "$FLASK_DIR"
 source flaskenv/bin/activate
+cd "$AGENTS_DIR"
 python3 FFF_make_pins_headless.py "$SCAC" "$PINID"
 
 EXIT_CODE=$?
