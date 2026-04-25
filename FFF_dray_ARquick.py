@@ -40,7 +40,7 @@ except:
 
 scac = scac.upper()
 
-if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
+if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO' or scac == 'NAIM':
 
     print(f'Running FFF_dray_ARcheck for {scac}')
     host_name = socket.gethostname()

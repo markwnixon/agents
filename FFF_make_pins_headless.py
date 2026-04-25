@@ -54,7 +54,7 @@ nt = 'remote'
 po = True
 scac = scac.upper()
 
-if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
+if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO' or scac == 'NAIM':
     print(f'Running FFF_make_pins_headless for {scac} for pinid {pinid} in tunnel mode: {nt}')
     host_name = socket.gethostname()
     print("Host Name:", host_name)
