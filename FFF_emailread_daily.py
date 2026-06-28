@@ -406,7 +406,8 @@ if 1==1:
                                        Dropblock3=None, Date3=pulldate, Location3=None, InvoDate=None, PaidDate=None,
                                        PaidAmt=None, PayRef=None, PayMeth=None, PayAcct=None, BalDue=None, Payments=None, Quote=None,
                                        Date4=None,Date5=None,Date6=None,RateCon=None,Rcache=0,Proof2=None,Pcache2=0,Emailjp=None,
-                                       Emailoa=None,Emailap=None,Saljp=None,Saloa=None,Salap=None,Date7=None,SSCO=None,Date8=indate,Ship=None,Voyage=None)
+                                       Emailoa=None,Emailap=None,Saljp=None,Saloa=None,Salap=None,Date7=None,SSCO=None,Date8=indate,Ship=None,Voyage=None,
+                                       UserMod='FFF_emailread_daily', DelStat=0, DrvProof=None, DrvSeal=None, D1cache=0, D2cache=0)
 
 
                         db.session.add(input)
