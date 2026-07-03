@@ -1,0 +1,6 @@
+# Runtime output
+incoming/
+
+# Python cache
+__pycache__/
+*.py[cod]
