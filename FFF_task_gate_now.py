@@ -107,7 +107,7 @@ def softwait(browser, xpath):
         elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
         #elem = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, xpath)))
     if 1 == 2:
-        textboxes = browser.find_elements_by_xpath(xpath)
+        textboxes = browser.find_elements(By.XPATH, xpath)
         if textboxes:
             for textbox in textboxes:
                 print(f'Finding textboxes on page: {textbox.text}')
@@ -460,12 +460,12 @@ def gatescraper(printif, dayback):
             time.sleep(4)
             print('Done Sleeping') if printif == 1 else 1
             print('Getting xpath') if printif == 1 else 1
-            selectElem = browser.find_element_by_xpath('//*[@id="UserName"]')
+            selectElem = browser.find_element(By.XPATH, '//*[@id="UserName"]')
             print('Got xpath for Username') if printif == 1 else 1
             selectElem.clear()
             selectElem.send_keys(username)
 
-            selectElem = browser.find_element_by_xpath('//*[@id="Password"]')
+            selectElem = browser.find_element(By.XPATH, '//*[@id="Password"]')
             print('Got xpath for Password') if printif == 1 else 1
             selectElem.clear()
             selectElem.send_keys(password)
@@ -490,7 +490,7 @@ def gatescraper(printif, dayback):
 
                 softwait(browser, '//*[@id="StartDate"]')
                 try:
-                    selectElem = browser.find_element_by_xpath('//*[@id="StartDate"]')
+                    selectElem = browser.find_element(By.XPATH, '//*[@id="StartDate"]')
                     selectElem.clear()
                     selectElem.send_keys(startdate)
                 except:
@@ -501,7 +501,7 @@ def gatescraper(printif, dayback):
                     return addtext, newadd, newinterchange, errors
 
                 try:
-                    selectElem = browser.find_element_by_xpath('//*[@id="EndDate"]')
+                    selectElem = browser.find_element(By.XPATH, '//*[@id="EndDate"]')
                     selectElem.clear()
                     selectElem.send_keys(enddate)
                     time.sleep(1)
@@ -516,7 +516,7 @@ def gatescraper(printif, dayback):
 
                 try:
                     contentstr = f'//*[@id="completed"]/div/div[1]'
-                    selectElem = browser.find_element_by_xpath(contentstr)
+                    selectElem = browser.find_element(By.XPATH, contentstr)
                     con = selectElem.text
                     res = [int(i) for i in con.split() if i.isdigit()]
                 except:
@@ -545,7 +545,7 @@ def gatescraper(printif, dayback):
                 if 1==1:
                     #try to change the number per page to 30
                     #contentstr = f'//*[@id="completed"]/div/div[4]/div/ul[1]/li/select'
-                    #selectElem = browser.find_element_by_xpath(contentstr)
+                    #selectElem = browser.find_element(By.XPATH, contentstr)
                     #time.sleep(1)
                     #selectElem.select_by_index(3)
                     #time.sleep(1)
@@ -556,7 +556,7 @@ def gatescraper(printif, dayback):
                         cr = []
                         for j in range(1,12):
                             contentstr = f'//*[@id="completed"]/div/div[3]/table/tbody/tr[{i}]/td[{j}]'
-                            selectElem = browser.find_element_by_xpath(contentstr)
+                            selectElem = browser.find_element(By.XPATH, contentstr)
                             con = selectElem.text
                             if j==1:
                                 movetyp = selectElem.text.strip()
@@ -565,7 +565,7 @@ def gatescraper(printif, dayback):
                                 con = movetyp
                             cr.append(con)
                             if j==3:
-                                nc = browser.find_element_by_xpath(f'//*[@id="completed"]/div/div[3]/table/tbody/tr[{i}]/td[{j}]/a')
+                                nc = browser.find_element(By.XPATH, f'//*[@id="completed"]/div/div[3]/table/tbody/tr[{i}]/td[{j}]/a')
                                 clink = nc.get_attribute('href')
                                 cr.append(clink)
                                 thiscon = selectElem.text.strip()
@@ -621,7 +621,7 @@ def gatescraper(printif, dayback):
                         time.sleep(2)
 
                         contentstr = '/html/body/table/tbody/tr[3]/td/table/tbody/tr/td[3]'
-                        selectElem = browser.find_element_by_xpath(contentstr)
+                        selectElem = browser.find_element(By.XPATH, contentstr)
                         exitdt = selectElem.text
                         print(f'Exit Date-Time: {exitdt}')
                         dpt_exit = exitdt.split()
