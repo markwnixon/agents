@@ -458,7 +458,7 @@ def html_scraper(thiscon, movetyp, htmldat):
             input = Interchange(Container=thiscon, TruckNumber=conset['TruckNumber'], Driver='NAY', Chassis=conset['Chassis'],
                                 Date=ticket_date, Release=conset['Release'], GrossWt=conset['GrossWt'], Seals=conset['Seals'], ConType=contype, CargoWt=conset['CargoWt'],
                                 Time=ticket_time, Status='AAAAAA', Source=viewfile, Path='NAY', Type=movetyp, Jo='NAY', Company='NAY', Other=None,
-                                TimeExit=None, PortHours=None)
+                                TimeExit=None, PortHours=None, PortTrip=None)
 
             db.session.add(input)
             db.session.commit()

@@ -297,8 +297,9 @@ class Interchange(db.Model):
     Other = db.Column('Other', db.String(50))
     TimeExit = db.Column('TimeExit', db.String(25))
     PortHours = db.Column('PortHours', db.Integer)
+    PortTrip = db.Column('PortTrip', db.Integer, default=None)
 
-    def __init__(self, Container, TruckNumber, Driver, Chassis, Date, Release, GrossWt, Seals, ConType, CargoWt, Time, Status, Source, Path, Type, Jo, Company, Other, TimeExit, PortHours):
+    def __init__(self, Container, TruckNumber, Driver, Chassis, Date, Release, GrossWt, Seals, ConType, CargoWt, Time, Status, Source, Path, Type, Jo, Company, Other, TimeExit, PortHours, PortTrip=None):
         self.Container = Container
         self.TruckNumber = TruckNumber
         self.Driver = Driver
@@ -319,6 +320,7 @@ class Interchange(db.Model):
         self.Other = Other
         self.TimeExit = TimeExit
         self.PortHours = PortHours
+        self.PortTrip = PortTrip
 
 class StreetTurns(db.Model):
     __tablename__ = 'streetturns'
@@ -487,6 +489,8 @@ class Orders(db.Model):
     Payments = db.Column('Payments', db.String(45))
     Quote = db.Column('Quote', db.String(100))
     RateCon = db.Column('RateCon', db.String(100))
+    RCAmount = db.Column('RCAmount', db.String(45))
+    RCneeded = db.Column('RCneeded', db.Integer, default=0)
     Rcache = db.Column('Rcache', db.Integer)
     Proof2 = db.Column('Proof2', db.String(100))
     Pcache2 = db.Column('Pcache2', db.Integer)
@@ -501,6 +505,8 @@ class Orders(db.Model):
     Voyage = db.Column('Voyage', db.String(45))
     UserMod = db.Column('UserMod', db.String(45))
     DelStat = db.Column('DelStat', db.Integer)
+    DisStatus = db.Column('DisStatus', db.String(45))
+    HoldType = db.Column('HoldType', db.String(45))
 
     def __init__(self, Status, Jo, HaulType, Order, Company, Location, BOL, Booking, Container, Driver, Pickup,
                  Delivery, Amount, Date, Time, Date2, Time2, Time3, PaidInvoice, Source, Description, Chassis,
@@ -509,7 +515,7 @@ class Orders(db.Model):
                  Scache, Pcache, Icache, Mcache, Pkcache, QBi, InvoTotal, Truck, Dropblock3, Location3, Date3,
                  Date4, Date5, Date6, Date7, Date8, InvoDate, PaidDate, PaidAmt, PayRef, PayMeth, PayAcct, BalDue, Payments,
                  Quote, RateCon, Rcache, Proof2, Pcache2, Emailjp, Emailoa, Emailap, Saljp, Saloa, Salap, SSCO, Ship, Voyage, UserMod, DelStat,
-                 DrvProof, DrvSeal, D1cache, D2cache):
+                 DrvProof, DrvSeal, D1cache, D2cache, HoldType=None, RCneeded=0, RCAmount=None, DisStatus=None):
         self.Status = Status
         self.Jo = Jo
         self.HaulType = HaulType
@@ -581,6 +587,8 @@ class Orders(db.Model):
         self.Payments = Payments
         self.Quote = Quote
         self.RateCon = RateCon
+        self.RCAmount = RCAmount
+        self.RCneeded = RCneeded
         self.Rcache = Rcache
         self.Proof2 = Proof2
         self.Pcache2 = Pcache2
@@ -595,6 +603,8 @@ class Orders(db.Model):
         self.Voyage = Voyage
         self.UserMod = UserMod
         self.DelStat = DelStat
+        self.DisStatus = DisStatus
+        self.HoldType = HoldType
         self.DrvProof = DrvProof
         self.DrvSeal = DrvSeal
         self.D1cache = D1cache
@@ -846,8 +856,9 @@ class People(db.Model):
     Saljp = db.Column('Saljp', db.String(45))
     Saloa = db.Column('Saloa', db.String(45))
     Salap = db.Column('Salap', db.String(45))
+    NoProofNeeded = db.Column('NoProofNeeded', db.Integer, default=0)
 
-    def __init__(self, Ptype, Company, First, Middle, Last, Addr1, Addr2, Addr3, Idtype, Idnumber, Telephone, Email, Associate1, Associate2, Temp1, Temp2, Date1, Date2, Source, Accountid, Saljp, Saloa, Salap):
+    def __init__(self, Ptype, Company, First, Middle, Last, Addr1, Addr2, Addr3, Idtype, Idnumber, Telephone, Email, Associate1, Associate2, Temp1, Temp2, Date1, Date2, Source, Accountid, Saljp, Saloa, Salap, NoProofNeeded=0):
         self.Ptype = Ptype
         self.Company = Company
         self.First = First
@@ -871,6 +882,7 @@ class People(db.Model):
         self.Saljp = Saljp
         self.Saloa = Saloa
         self.Salap = Salap
+        self.NoProofNeeded = NoProofNeeded
 
 
 

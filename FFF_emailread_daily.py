@@ -30,7 +30,7 @@ if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
 
     from remote_db_connect import tunnel, db
     from models8 import Interchange, Orders, Drivers, Pins, Drops, People, PortClosed
-    from CCC_system_setup import websites, usernames, passwords, addpath3, imap_url, scac, companydata, nt, fromdirbase
+    from CCC_system_setup import usernames, passwords, addpath3, imap_url, scac, companydata, nt
     from email_reports import emailtxt
     from cronfuncs import conmatch
 else:
@@ -46,7 +46,6 @@ import re
 import numpy as np
 from cronfuncs import newjo
 from datetime import timedelta
-from fpdf import FPDF
 
 booking_p=re.compile("[1259][0123456789]{8}|EBKG[0123456789ABCDQ]{8}|EBKGQ[0123456789]{8}|[012][PHL0123456789]{9}|[S][-0123456789]{10}|[S][0123456789]{9}|[0O][0123456789VRO]{11}|NHOBJ[0123456789]{6}")
 
@@ -224,39 +223,10 @@ def next_business_day(date, jx):
             kx += 1
             if kx == jx: return next_day
 
-if 1==1:
+def plan_order_value(date):
+    return f"Plan {date.strftime('%a')} {date.strftime('%b')[0]}{date.day}"
 
-    def makepdf(body, date):
-        sdate = f'Email Date: {date}'
-        docname = f'global_email_{date}.pdf'
-        docname = docname.replace('-','')
-        fromdir = f'{fromdirbase}/incoming/tjobs'
-        fromfile = f'{fromdir}/{docname}'
-        slist = os.listdir(fromdir)
-        #print(slist)
-        if docname not in slist:
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=10)
-            pdf.cell(200, 10, txt=sdate, ln=1, align='L')
-            newbody = []
-            for line in body.splitlines():
-                line = line.strip()
-                newbody.append(line)
-            for jx, line in enumerate(newbody):
-                line = line.strip()
-                #print(jx, line)
-                pdf.cell(200, 10, txt=line, ln=jx + 2, align='L')
-            try:
-                pdf.output(fromfile)
-            except:
-                #print('Could not create an output file for this one')
-                docname = 'fail'
-            if docname != 'fail':
-                copyline = f'scp {fromfile} {websites["ssh_data"] + "vSource"}'
-                #print('copyline=', copyline)
-                os.system(copyline)
-        return docname
+if 1==1:
 
     if remit>0:
 
@@ -312,7 +282,6 @@ if 1==1:
                     #print(f'body not decoded:{body}')
                     skipit = 0
                 if skipit:
-                    docname = makepdf(body, getdate)
                     blist=get_bookings(body)
                     bodylines = body.splitlines()
                     if blist:
@@ -329,7 +298,7 @@ if 1==1:
                                     #print(f'Booking {b} is a 20')
                                     size = '20'
                             if b not in norepeat:
-                                booktriplet=[b,getdate,getdate,size,docname]
+                                booktriplet=[b,getdate,getdate,size]
                                 bookings.append(booktriplet)
                                 norepeat.append(b)
                             else:
@@ -361,7 +330,6 @@ if 1==1:
                 d2=book[2].strftime('%Y-%m-%d')
                 pulldate = book[1] + timedelta(1)
                 indate = next_business_day(pulldate, 1)
-                doc = book[4]
                 try:
                     size = book[3]
                 except:
@@ -387,20 +355,19 @@ if 1==1:
                         jtype=tcode + 'T'
                         nextjo=newjo(jtype,sdate)
                         load='G'+nextjo[-5:]
-                        order='G'+nextjo[-5:]
-                        if doc == 'fail': doc = None
+                        order=plan_order_value(pulldate)
                         #print(doc)
 
                         input = Orders(Status='AO', Jo=nextjo, HaulType='Dray Export DP', Order=order, Bid=bid, Lid=lid,
                                        Did=did, Company2='Global Business Link', Location=None, BOL=None, Booking=b,
                                        Container=None, Driver=None, Pickup=None, Delivery=None, Amount='370.00',
                                        Date=pulldate, Time=None, Time3=None, Date2=indate, Time2=None, PaidInvoice=None,
-                                       Source=doc, Description=None, Chassis=None, Detention=None,
+                                       Source=None, Description=None, Chassis=None, Detention=None,
                                        Storage=None, Release=0, Company='Baltimore Seagirt', Seal=None,
                                        Shipper='Global Business Link', Type=putsize, Label=None,
                                        Dropblock2='Global Business Link\n4000 Coolidge Ave K\nBaltimore, MD 21229',
                                        Dropblock1='Baltimore Seagirt\n2600 Broening Hwy\nBaltimore, MD 21224',
-                                       Commodity=None, Packing=None, Links=None, Hstat=-1, Istat=-1, Proof=None,
+                                       Commodity=None, Packing=None, Links=None, Hstat=-1, Istat=-1, Proof='No Proof Needed',
                                        Invoice=None, Gate=None, Package=None, Manifest=None, Scache=0, Pcache=0,
                                        Icache=0, Mcache=0, Pkcache=0, QBi=None, InvoTotal='370.00', Truck=None,
                                        Dropblock3=None, Date3=pulldate, Location3=None, InvoDate=None, PaidDate=None,

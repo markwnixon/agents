@@ -589,7 +589,7 @@ def gatescraper(printif, dayback):
                                 input = Interchange(Container=thiscon, TruckNumber='NAY', Driver='NAY', Chassis=cr[8],
                                                     Date=mydate, Release=cr[11], GrossWt='NAY', Seals='NAY', ConType=contype, CargoWt='NAY',
                                                     Time=mytime, Status='AAAAAA', Source='NAY', Path=cr[7], Type=movetyp, Jo='NAY', Company='NAY', Other=None,
-                                                    TimeExit=None, PortHours=None)
+                                                    TimeExit=None, PortHours=None, PortTrip=None)
 
                                 db.session.add(input)
                                 db.session.commit()
