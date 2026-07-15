@@ -4,7 +4,7 @@ def getpaths(machine,pathto):
         if pathto == 'dropbox': return '/mnt/Ubuntu1TB01/Dropbox'
         if pathto == 'system': return '/mnt/Ubuntu1TB01/Dropbox/system'
         if pathto == 'working': return '/home/mark/flask/agents'
-    elif machine == 'mserver':
+    elif machine == 'mserver' or machine == 'aserver-agents-modern':
         if pathto == 'dropbox': return '/home/mark/Dropbox'
         if pathto == 'system': return '/home/mark/Dropbox/system'
         if pathto == 'working': return '/home/mark/flask/agents'
