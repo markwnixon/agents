@@ -267,7 +267,7 @@ def date_changed(old_value, new_value):
 
 def launch_browser():
     playwright = sync_playwright().start()
-    headless = os.environ.get("BOOKING_REVIEW_HEADLESS", "0").lower() in ("1", "true", "yes")
+    headless = os.environ.get("BOOKING_REVIEW_HEADLESS", "1").lower() in ("1", "true", "yes")
     browser = playwright.chromium.launch(
         headless=headless,
         chromium_sandbox=False,
@@ -414,24 +414,21 @@ def get_container_details(page, container):
     except PlaywrightError:
         pass
 
+    table = page.locator("#inquiries-container-availability-table").first
     try:
-        page.wait_for_function(
-            "() => document.querySelector('#inquiries-container-availability-table') || document.body.innerText.toLowerCase().includes('not found')",
-            timeout=20000,
-        )
+        table.wait_for(state="attached", timeout=30000)
     except PlaywrightTimeoutError:
-        pass
-
-    body_text = clean_text(page.locator("body").inner_text(timeout=10000))
-    if "not found" in body_text.lower() or page.locator("#inquiries-container-availability-table").count() == 0:
+        body_text = clean_text(page.locator("body").inner_text(timeout=10000))
         return {
             "found": False,
             "container": container,
-            "notes": f"Container {container} not found in public port availability inquiry.",
+            "notes": (
+                f"Container {container} not found in public port availability inquiry."
+                if "not found" in body_text.lower()
+                else f"Container {container} availability table did not load in public port inquiry."
+            ),
         }
 
-    table = page.locator("#inquiries-container-availability-table").first
-    table.wait_for(state="attached", timeout=20000)
     row = table_row_dict(table)
 
     vessel_voyage = first_value(row, "Vessel/Voyage", "Vessel / Voyage", "Vessel Voyage")

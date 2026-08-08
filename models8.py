@@ -710,8 +710,17 @@ class Gledger(db.Model):
     Reconciled = db.Column('Reconciled', db.Integer)
     Date = db.Column('Date', db.DateTime)
     Ref = db.Column('Ref', db.String(45))
+    JournalId = db.Column('JournalId', db.String(80))
+    JournalSeq = db.Column('JournalSeq', db.Integer)
+    JournalMemo = db.Column('JournalMemo', db.String(255))
+    PostedBy = db.Column('PostedBy', db.String(45))
+    PostedAt = db.Column('PostedAt', db.DateTime)
+    SourceTable = db.Column('SourceTable', db.String(45))
+    SourceId = db.Column('SourceId', db.Integer)
 
-    def __init__(self, Debit,Credit,Account,Aid,Source,Sid,Type,Tcode,Com,Recorded,Reconciled,Date,Ref):  # , dinc, dexp,):
+    def __init__(self, Debit,Credit,Account,Aid,Source,Sid,Type,Tcode,Com,Recorded,Reconciled,Date,Ref,
+                 JournalId=None, JournalSeq=None, JournalMemo=None, PostedBy=None, PostedAt=None,
+                 SourceTable=None, SourceId=None):  # , dinc, dexp,):
         self.Debit=Debit
         self.Credit=Credit
         self.Account=Account
@@ -725,6 +734,13 @@ class Gledger(db.Model):
         self.Reconciled=Reconciled
         self.Date = Date
         self.Ref = Ref
+        self.JournalId = JournalId
+        self.JournalSeq = JournalSeq
+        self.JournalMemo = JournalMemo
+        self.PostedBy = PostedBy
+        self.PostedAt = PostedAt
+        self.SourceTable = SourceTable
+        self.SourceId = SourceId
 
 class PaymentsRec(db.Model):
     __tablename__ = 'paymentsrec'
