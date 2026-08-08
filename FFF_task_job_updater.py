@@ -4,6 +4,7 @@ import sys
 from PyPDF2 import PdfReader, PdfWriter, Transformation
 import socket
 from utils import getpaths
+from ticket_sources import ordered_ticket_sources
 
 #Handle the input arguments from script file
 try:
@@ -185,12 +186,7 @@ for odat in odata:
         if len(idata) == 2:
             idat1 = idata[0]
             idat2 = idata[1]
-            if 'IN' in idat1.Source:
-                #Then switch to the out is first:
-                idat1 = idata[1]
-                idat2 = idata[0]
-            pdf1 = idat1.Source
-            pdf2 = idat2.Source
+            pdf1, pdf2 = ordered_ticket_sources(idat1.Source, idat2.Source)
             test = 0
             if con in pdf1 and con in pdf2 and 'OUT' in pdf1 and ('IN' in pdf2 or 'Source' in pdf2):
                 test = 1
