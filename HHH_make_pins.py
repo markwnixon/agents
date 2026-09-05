@@ -95,7 +95,7 @@ class PlaywrightPage:
         return self._page.url
 
     def maximize_window(self):
-        self._page.set_viewport_size({"width": 1440, "height": 1000})
+        self._page.set_viewport_size({"width": 1920, "height": 1200})
 
     def get(self, url):
         current_base = self._page.url.split("#")[0]
@@ -284,9 +284,14 @@ def launch_browser():
     browser = playwright.chromium.launch(
         headless=headless,
         chromium_sandbox=False,
-        args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-seccomp-filter-sandbox"],
+        args=[
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-seccomp-filter-sandbox",
+            "--window-size=1920,1200",
+        ],
     )
-    context = browser.new_context(viewport={"width": 1440, "height": 1000})
+    context = browser.new_context(viewport={"width": 1920, "height": 1200})
     page = context.new_page()
     return PlaywrightPage(playwright, browser, page)
 
@@ -418,6 +423,27 @@ def hard_select_option(browser, select_id, option_text, timeout=20, retries=3):
 
     raise Exception(f"Failed to hard-select '{option_text}' in select '{select_id}'")
 
+def fill_input_and_verify(browser, by, value, text, label, timeout=20, retries=3):
+    last_error = None
+    for attempt in range(1, retries + 1):
+        try:
+            elem = WebDriverWait(browser, timeout).until(
+                EC.element_to_be_clickable((by, value))
+            )
+            browser.execute_script("arguments[0].scrollIntoView({block:'center'});", elem)
+            elem.locator.click()
+            elem.clear()
+            elem.locator.type(str(text), delay=20)
+            WebDriverWait(browser, 5, poll_frequency=0.2).until(
+                lambda d: elem.locator.input_value(timeout=500) == str(text)
+            )
+            return elem
+        except Exception as exc:
+            last_error = exc
+            print(f'{label} input fill verification failed on try {attempt}; retrying', flush=True)
+            time.sleep(0.5)
+    raise TimeoutException(f"Could not verify {label} input value: {last_error}")
+
 def get_text(browser, xpath):
     time.sleep(1)
     textboxes = browser.find_elements_by_xpath(xpath)
@@ -472,6 +498,7 @@ def get_result_message(browser, timeout=15):
         return text, error
 
     except TimeoutException:
+        debug_visible_messages(browser)
         return "No result message found", True
 
 # Wait until the select has more than 1 option (skip placeholder 'Loading...')
@@ -563,15 +590,19 @@ def wait_for_booking_result(browser, timeout=5):
 
     wait = WebDriverWait(browser, timeout)
 
-    wait.until(
-        lambda d: (
-                d.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
-                or d.find_elements(By.XPATH, BOOKING_FULL_XPATH)
-                or d.find_elements(By.XPATH, PAST_BOOKING_XPATH)
-                or d.find_elements(By.XPATH, CHASSIS_XPATH)
-                or d.find_elements(By.XPATH, ALL_IS_WELL_XPATH)
+    try:
+        wait.until(
+            lambda d: (
+                    d.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
+                    or d.find_elements(By.XPATH, BOOKING_FULL_XPATH)
+                    or d.find_elements(By.XPATH, PAST_BOOKING_XPATH)
+                    or d.find_elements(By.XPATH, CHASSIS_XPATH)
+                    or d.find_elements(By.XPATH, ALL_IS_WELL_XPATH)
+            )
         )
-    )
+    except TimeoutException:
+        debug_visible_messages(browser)
+        return "No booking result found after entering booking", True
 
     # ❌ Booking not found
     err = browser.find_elements(By.XPATH, BOOKING_NOT_FOUND_XPATH)
@@ -673,6 +704,165 @@ def commit_field_without_enter(locator):
     locator.evaluate("el => el.blur()")
     time.sleep(0.5)
 
+def wait_for_ssco_populated(browser, ssco_xpath=None, panel_xpath=None, timeout=20):
+    page = browser._page
+    selectors = []
+    if ssco_xpath:
+        selectors.append(f"xpath={ssco_xpath}")
+    if panel_xpath:
+        selectors.extend([
+            f"xpath={panel_xpath}//select[contains(@id,'SscoCode')]",
+            f"xpath={panel_xpath}//select[@data-name='dual-ssco']",
+        ])
+    if not selectors:
+        selectors.extend([
+            "xpath=//select[contains(@id,'ContainerAppts') and contains(@id,'SscoCode')]",
+            "xpath=//select[contains(@id,'EmptyInAppts') and contains(@id,'SscoCode')]",
+        ])
+
+    deadline = time.time() + timeout
+    last_seen = ""
+    while time.time() < deadline:
+        for selector in selectors:
+            locator = page.locator(selector).first
+            try:
+                locator.wait_for(state="attached", timeout=500)
+                value = clean_ssco_value(locator.input_value(timeout=500))
+                text = clean_ssco_value(
+                    locator.locator("option:checked").first.text_content(timeout=500)
+                )
+                last_seen = value or text or last_seen
+                if value and value.lower() != "select":
+                    print(f'SSCO populated: {value}', flush=True)
+                    return value
+                if text and text.lower() != "select":
+                    print(f'SSCO populated: {text}', flush=True)
+                    return text
+            except Exception:
+                continue
+        time.sleep(0.25)
+
+    raise TimeoutException(f"Timed out waiting for SSCO to populate; last value was '{last_seen}'")
+
+def clean_ssco_value(value):
+    return str(value or "").strip()
+
+def first_visible_enabled(locator, timeout=20):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            for ix in range(locator.count()):
+                item = locator.nth(ix)
+                if item.is_visible(timeout=250) and item.is_enabled(timeout=250):
+                    return item
+        except Exception:
+            pass
+        time.sleep(0.25)
+    raise TimeoutException("Timed out waiting for visible enabled locator")
+
+def debug_locator_state(page, name, selector):
+    try:
+        locator = page.locator(selector)
+        count = locator.count()
+        visible = locator.first.is_visible(timeout=500) if count else False
+        enabled = locator.first.is_enabled(timeout=500) if count else False
+        value = ""
+        if count:
+            try:
+                value = clean_ssco_value(locator.first.input_value(timeout=500))
+            except Exception:
+                value = clean_ssco_value(locator.first.text_content(timeout=500))
+        print(f'  {name}: count={count} visible={visible} enabled={enabled} value="{value}"', flush=True)
+    except Exception as exc:
+        print(f'  {name}: debug failed: {exc}', flush=True)
+
+def debug_paired_move_state(browser, label, intype=None, outtype=None):
+    page = browser._page
+    print(f'DEBUG paired move state - {label}', flush=True)
+    debug_locator_state(page, 'IsInMove', '#IsInMove')
+    debug_locator_state(page, 'IsOutMove', '#IsOutMove')
+    debug_locator_state(page, 'PrimaryMoveType', '#PrimaryMoveType')
+    try:
+        primary_text = clean_ssco_value(page.locator("#PrimaryMoveType option:checked").first.text_content(timeout=500))
+        print(f'  PrimaryMoveType selected text="{primary_text}" expected="{("Full In" if intype == "Load In" else intype)}"', flush=True)
+    except Exception:
+        pass
+    debug_locator_state(page, 'SecondaryMoveType', '#SecondaryMoveType')
+    try:
+        secondary_value = clean_ssco_value(page.locator("#SecondaryMoveType").first.input_value(timeout=500))
+        expected_secondary = "ExportsEmptyOut" if outtype == "Empty Out" else "ImportsFullOut" if outtype == "Load Out" else outtype
+        print(f'  SecondaryMoveType selected value="{secondary_value}" expected="{expected_secondary}"', flush=True)
+    except Exception:
+        pass
+    debug_locator_state(page, 'IN booking input', "xpath=//*[@id='BookingNumber']")
+    debug_locator_state(page, 'IN empty container input', "xpath=//*[@id='EmptyInAppts_0__ApptInfo_ContainerNumber']")
+    debug_locator_state(page, 'OUT booking input', "xpath=//div[@id='divUpdatePanel-OUT']//input[@id='BookingNumber']")
+    debug_locator_state(page, 'OUT container input', "xpath=//div[@id='divUpdatePanel-OUT']//input[@id='ContainerNumber']")
+    debug_locator_state(page, 'OUT pin/BOL input', "xpath=//div[@id='divUpdatePanel-OUT']//input[contains(@id,'PinNumber')]")
+    debug_locator_state(page, 'OUT submit button', "xpath=//div[@id='divUpdatePanel-OUT']//button[.//span[normalize-space()='Submit'] or normalize-space()='Submit']")
+    debug_locator_state(page, 'OUT go button', "xpath=//div[@id='divUpdatePanel-OUT']//button[.//span[normalize-space()='Go'] or normalize-space()='Go']")
+
+def debug_visible_messages(browser):
+    page = browser._page
+    print('DEBUG visible portal messages after waiting for result:', flush=True)
+    for selector in [
+        "xpath=//*[contains(@class,'error') and normalize-space()]",
+        "xpath=//div[contains(@class,'ui-dialog-content')]//*[normalize-space()]",
+        "xpath=//*[contains(@class,'validation') and normalize-space()]",
+    ]:
+        try:
+            locator = page.locator(selector)
+            for ix in range(min(locator.count(), 10)):
+                item = locator.nth(ix)
+                if item.is_visible(timeout=250):
+                    text = clean_ssco_value(item.inner_text(timeout=250))
+                    if text:
+                        print(f'  message: {text[:250]}', flush=True)
+        except Exception:
+            pass
+
+def wait_for_coupled_load_out_ready(browser, panel_xpath, timeout=30):
+    page = browser._page
+    pin_selector = f"xpath={panel_xpath}//input[contains(@id,'PinNumber') and not(@disabled)]"
+    submit_selector = (
+        f"xpath={panel_xpath}//button["
+        f"(.//span[normalize-space()='Submit'] or normalize-space()='Submit') and not(@disabled)]"
+    )
+    print('Waiting for coupled Load Out fields after container GO', flush=True)
+
+    def ready(driver):
+        try:
+            pin_ready = page.locator(pin_selector).first.is_visible(timeout=500)
+            submit_ready = page.locator(submit_selector).first.is_visible(timeout=500)
+            return pin_ready and submit_ready
+        except Exception:
+            return False
+
+    try:
+        WebDriverWait(browser, timeout, poll_frequency=0.25).until(ready)
+        print('Coupled Load Out PIN/BOL and Submit controls are ready', flush=True)
+    except TimeoutException:
+        debug_paired_move_state(browser, 'coupled load out readiness timeout', None, 'Load Out')
+        raise
+
+def click_coupled_load_out_submit(page, panel_xpath, timeout=20000):
+    selector = (
+        f"xpath={panel_xpath}//input[contains(@id,'PinNumber')]/ancestor::div[contains(@id,'ContainerAppts')][1]"
+        "//button[(.//span[normalize-space()='Submit'] or normalize-space()='Submit') and not(@disabled)]"
+    )
+    locator = page.locator(selector).first
+    try:
+        locator.wait_for(state="visible", timeout=timeout)
+        locator.scroll_into_view_if_needed(timeout=5000)
+        ctrl_id = locator.get_attribute("id")
+        ctrl_text = clean_ssco_value(locator.inner_text(timeout=500))
+        print(f'Clicking coupled Load Out Submit control id={ctrl_id} text="{ctrl_text}"', flush=True)
+        locator.click()
+        return True
+    except Exception as exc:
+        print(f'Coupled Load Out specific submit not found; falling back to panel submit: {exc}', flush=True)
+        return click_panel_submit(page, panel_xpath, timeout=timeout)
+
 def click_panel_submit(page, panel_xpath, timeout=20000):
     submit_locators = [
         page.locator(f"xpath={panel_xpath}//button[.//span[normalize-space()='Submit'] and not(@disabled)]").first,
@@ -689,6 +879,9 @@ def click_panel_submit(page, panel_xpath, timeout=20000):
         try:
             locator.wait_for(state="visible", timeout=timeout // len(submit_locators))
             locator.scroll_into_view_if_needed(timeout=5000)
+            ctrl_id = locator.get_attribute("id")
+            ctrl_text = clean_ssco_value(locator.inner_text(timeout=500))
+            print(f'Clicking Submit control id={ctrl_id} text="{ctrl_text}"', flush=True)
             locator.click()
             return True
         except Exception as exc:
@@ -769,6 +962,55 @@ def select_secondary_move(browser, outtype, timeout=20):
 
     return select_elem
 
+def wait_for_paired_move_ready(browser, intype, outtype, timeout=20):
+    page = browser._page
+    expected_primary = "Full In" if intype == "Load In" else intype
+    expected_secondary = "ExportsEmptyOut" if outtype == "Empty Out" else "ImportsFullOut"
+
+    inbound_ready_xpath = "//*[@id='BookingNumber']"
+    if intype == "Empty In":
+        inbound_ready_xpath = "//*[@id='EmptyInAppts_0__ApptInfo_ContainerNumber']"
+
+    outbound_field_xpath = "//div[@id='divUpdatePanel-OUT']//input[@id='BookingNumber']"
+    if outtype == "Load Out":
+        outbound_field_xpath = "//div[@id='divUpdatePanel-OUT']//input[@id='ContainerNumber']"
+
+    print('Waiting for paired move page state to settle', flush=True)
+    wait_for_async(browser)
+    time.sleep(1.0)
+
+    def paired_state_is_ready(driver):
+        try:
+            in_checked = page.locator("#IsInMove").is_checked(timeout=500)
+            out_checked = page.locator("#IsOutMove").is_checked(timeout=500)
+            primary_text = clean_ssco_value(
+                page.locator("#PrimaryMoveType option:checked").first.text_content(timeout=500)
+            )
+            secondary_value = clean_ssco_value(
+                page.locator("#SecondaryMoveType").first.input_value(timeout=500)
+            )
+            inbound_visible = page.locator(f"xpath={inbound_ready_xpath}").first.is_visible(timeout=500)
+            out_panel_attached = page.locator("xpath=//div[@id='divUpdatePanel-OUT']").first.count() > 0
+            outbound_attached = page.locator(f"xpath={outbound_field_xpath}").first.count() > 0
+            return (
+                in_checked
+                and out_checked
+                and primary_text == expected_primary
+                and secondary_value == expected_secondary
+                and inbound_visible
+                and out_panel_attached
+                and outbound_attached
+            )
+        except Exception:
+            return False
+
+    try:
+        WebDriverWait(browser, timeout, poll_frequency=0.25).until(paired_state_is_ready)
+    except TimeoutException:
+        debug_paired_move_state(browser, 'paired move readiness timeout', intype, outtype)
+        raise
+    print('Paired move page state is ready', flush=True)
+
 def open_new_preadvise(browser, url, timeout=20):
     target_xpath = '//div[@id="divUpdatePanel-IN"]'
 
@@ -802,20 +1044,22 @@ def logonfox(err):
     print(f'Logon try {logontrys}')
 
     try:
-        # Username
-        user_elem = wait.until(
-            EC.visibility_of_element_located((By.ID, "UserName"))
+        try:
+            browser._page.wait_for_load_state("domcontentloaded", timeout=15000)
+        except PlaywrightTimeoutError:
+            pass
+        wait.until(
+            lambda d: d.find_elements(By.ID, "UserName") and d.find_elements(By.ID, "Password")
         )
-        user_elem.clear()
-        user_elem.send_keys(username)
+
+        # Username
+        user_elem = fill_input_and_verify(browser, By.ID, "UserName", username, "Username")
 
         # Password
-        pass_elem = wait.until(
-            EC.visibility_of_element_located((By.ID, "Password"))
-        )
-        pass_elem.clear()
-        pass_elem.send_keys(password)
+        pass_elem = fill_input_and_verify(browser, By.ID, "Password", password, "Password")
         print('Submitting login form', flush=True)
+        browser.execute_script("arguments[0].scrollIntoView({block:'center'});", pass_elem)
+        pass_elem.locator.click()
         pass_elem.submit()
         browser.press_enter()
         try:
@@ -877,22 +1121,6 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         closebutx = "//*[contains(@type,'button')]"
         print(f'inbox is {inbox}')
         paired_moves_initialized = False
-
-        if inbox and outbox:
-            print('Checking both move boxes and selecting both move types up front for coupled appointment', flush=True)
-            ensure_checkbox(browser, '//*[@id="IsInMove"]', checked=True)
-            ensure_checkbox(browser, '//*[@id="IsOutMove"]', checked=True)
-            wait_for_async(browser)
-
-            if intype == 'Load In':
-                hard_select_option(browser, "PrimaryMoveType", "Full In")
-            elif intype == 'Empty In':
-                hard_select_option(browser, "PrimaryMoveType", "Empty In")
-
-            wait_for_async(browser)
-            select_secondary_move(browser, outtype)
-            wait_for_async(browser)
-            paired_moves_initialized = True
 
         if inbox:
 
@@ -979,6 +1207,11 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 softwait(browser, '//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem = browser.find_element_by_xpath('//*[@id="EmptyInAppts_0__ApptInfo_ContainerNumber"]')
                 selectElem.send_keys(p.InCon)
+                commit_field_without_enter(selectElem.locator)
+                wait_for_ssco_populated(
+                    browser,
+                    ssco_xpath='//*[@id="EmptyInAppts_0__ApptInfo_SscoCode"]'
+                )
 
                 # In this case there is no error check on the container until the submit button is hit
 
@@ -1023,17 +1256,19 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
         if outbox:
 
             print(f'URL at beginning of outbox section is {url}')
-            if paired_moves_initialized:
-                print('Continuing coupled OUT move from existing page state; not rechecking boxes or reselecting move type', flush=True)
-                selectElem = None
-            else:
-                ensure_checkbox(browser, '//*[@id="IsOutMove"]', checked=True)
+            ensure_checkbox(browser, '//*[@id="IsOutMove"]', checked=True)
 
-                wait_for_async(browser)
+            wait_for_async(browser)
 
-                selectElem = WebDriverWait(browser, 20).until(
-                    EC.presence_of_element_located((By.ID, "SecondaryMoveType"))
+            selectElem = WebDriverWait(browser, 20).until(
+                EC.presence_of_element_located((By.ID, "SecondaryMoveType"))
+            )
+
+            WebDriverWait(browser, 20).until(
+                lambda d: d.execute_script(
+                    "return !document.getElementById('SecondaryMoveType').disabled;"
                 )
+            )
 
             if outtype == 'Empty Out':
                 if not paired_moves_initialized:
@@ -1128,59 +1363,36 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                 # if empty in there will be two container number xpaths, have to use full xpath....
                 # Scope the container number input to the OUT panel
                 panel_xpath = "//div[@id='divUpdatePanel-OUT']"
-                page = browser._page
+                container_xpath = f"{panel_xpath}//input[@id='ContainerNumber']"
 
-                if inbox:
-                    print('Using coupled Load Out path with inbound move; enter OutCon, click GO, then enter OutBook/BOL', flush=True)
-                    container_locator = page.locator(
-                        f"xpath={panel_xpath}//input[@id='ContainerNumber' and not(@disabled)]"
-                    ).first
-                    container_locator.wait_for(state="visible", timeout=20000)
-                    container_locator.fill("")
-                    container_locator.type(str(p.OutCon), delay=25)
-                    commit_field_without_enter(container_locator)
-                    click_panel_go(page, panel_xpath)
-                    time.sleep(0.5)
-                else:
-                    container_xpath = f"{panel_xpath}//input[@id='ContainerNumber']"
+                containerid = WebDriverWait(browser, 20).until(
+                    EC.element_to_be_clickable((By.XPATH, container_xpath))
+                )
 
-                    containerid = WebDriverWait(browser, 20).until(
-                        EC.element_to_be_clickable((By.XPATH, container_xpath))
-                    )
+                containerid.clear()
+                containerid.send_keys(p.OutCon)
+                containerid.submit()
 
-                    containerid.clear()
-                    containerid.send_keys(p.OutCon)
-                    containerid.submit()
-
-                    #Check here for error on container pull, instant errors like unavailable
-                    text, error = wait_for_container_result(browser)
-                    print(f'The load out text is {text} and error is {error}')
-                    if error:
-                        pinget = 0
-                        p.Notes = f'Error: {text[:190]}'
-                        p.Active = 0
-                        modtext = f'Error on: {p.Outtext}'
-                        p.Outtext = modtext
-                        db.session.commit()
-                        return
+                #Check here for error on container pull, instant errors like unavailable
+                text, error = wait_for_container_result(browser)
+                print(f'The load out text is {text} and error is {error}')
+                if error:
+                    pinget = 0
+                    p.Notes = f'Error: {text[:190]}'
+                    p.Active = 0
+                    modtext = f'Error on: {p.Outtext}'
+                    p.Outtext = modtext
+                    db.session.commit()
+                    return
 
 
-                if not inbox:
-                    softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
+                softwait(browser, '//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
 
                 # Only fill in the driver/truck data if no in box, otherwise it is there already
                 if not inbox: note_text = fillapptdata(browser, d, p, thisdate)
 
-                if inbox:
-                    pin_locator = page.locator(
-                        f"xpath={panel_xpath}//input[@id='ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber' and not(@disabled)]"
-                    ).first
-                    pin_locator.wait_for(state="visible", timeout=20000)
-                    pin_locator.fill("")
-                    pin_locator.type(str(p.OutBook), delay=25)
-                else:
-                    selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
-                    selectElem.send_keys(p.OutBook)
+                selectElem = browser.find_element_by_xpath('//*[@id="ContainerAppts_0__ApptInfo_ExpressGateModel_MainMove_PinNumber"]')
+                selectElem.send_keys(p.OutBook)
 
                 # Only input the chassis number for the outbox if there is no inbox
                 if not inbox:
@@ -1189,18 +1401,14 @@ def pinscraper(p,d,inbox,outbox,intype,outtype,browser,url,jx):
                     if not hasinput(chas): chas = f'{scac}007'
                     selectElem.send_keys(chas)
 
-                if inbox:
-                    commit_field_without_enter(pin_locator)
-                    click_panel_submit(page, panel_xpath)
-                else:
-                    selectElem.submit()
+                selectElem.submit()
 
                 # The popup box is different if there is an incoming box....
                 #softwait_long(browser, textboxx)
                 #pintext = get_text(browser, textboxx)
                 pintext, error = get_result_message(browser)
 
-                print(f'The pintext found here is: {pintext}')
+                print(f'The pintext found here is: {pintext} in element {selectElem}')
 
                 if not error:
                     pins = [int(s) for s in pintext.split() if s.isdigit()]

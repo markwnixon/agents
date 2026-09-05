@@ -5,4 +5,4 @@ echo "Deployed for: $USER"
 cd /home/$USER/flask
 source flaskenv/bin/activate
 cd /home/$USER/flask/agents
-python3 FFF_emailread_daily.py "$1"
+python3 FFF_emailread_daily.py "$@"

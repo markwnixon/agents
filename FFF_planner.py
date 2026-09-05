@@ -53,7 +53,19 @@ if scac != 'nogo':
     tcode= cdata[10]
 
     #booking_p = re.compile("[1259][0123456789]{8}|EBKG[0123456789]{8}|EBKGQ[0123456789]{8}|[012][PHL0123456789]{9}|[S][-0123456789]{10}|[S][0123456789]{9}|[0O][0123456789VRO]{11}")
-    booking_p = re.compile("[1259][0123456789]{8}|EBKG[0123456789ABCDQ]{8}|EBKGQ[0123456789]{8}|[012][PHL0123456789]{9}|[S][-0123456789]{10}|[S][0123456789]{9}|[0O][0123456789VRO]{11}|NHOBJ[0123456789]{6}")
+    booking_p = re.compile(
+        r"(?<![A-Z0-9])(?:"
+        r"EBKG[A-Z0-9]{8}|"
+        r"[1259][0-9]{8}|"
+        r"[1-9][0-9]{7}(?:-[0-9]+)?|"
+        r"[012][PHL0-9]{9}|"
+        r"S[-0-9]{10}|"
+        r"S[0-9]{9}|"
+        r"[0O][0-9VRO]{11}|"
+        r"NHOBJ[0-9]{6}"
+        r")(?![A-Z0-9])",
+        re.IGNORECASE,
+    )
     container_p=re.compile("[A-Z,a-z]{4}[0123456789]{7}[\s]")
 
     #Context = 0 for planning of today, contaxt =1 for planning of tomorrow
@@ -93,8 +105,15 @@ if scac != 'nogo':
         return newlist
 
     def get_bookings(longs):
-        t=booking_p.findall(longs)
-        return t
+        return [normalize_booking(match) for match in booking_p.findall(longs)]
+
+    def normalize_booking(booking):
+        booking = booking.strip().upper()
+        if booking.startswith('S'):
+            booking = booking.replace('-', '')
+        elif re.search(r'^[0-9]{8}-[0-9]+$', booking):
+            booking = re.sub(r'-[0-9]+$', '', booking)
+        return booking
 
     def get_body(msg):
         if msg.is_multipart():
@@ -273,8 +292,7 @@ if scac != 'nogo':
                     if blist:
                         #print(f'{getdate} {blist}')
                         for b in blist:
-                            b=b.strip()
-                            b = b.replace('-', '')
+                            b=normalize_booking(b)
                             if b not in norepeat:
                                 booktriplet=[b,getdate,getdate]
                                 bookings.append(booktriplet)
@@ -341,7 +359,7 @@ if scac != 'nogo':
             inchas = None
             intext = None
             for line in lastbody.splitlines():
-                t = booking_p.findall(line)
+                t = [normalize_booking(match) for match in booking_p.findall(line)]
                 if t != []:
                     ##print(f'booking in this line is {t[0]}')
                     bk = t[0]
