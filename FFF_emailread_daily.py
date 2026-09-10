@@ -103,6 +103,7 @@ AUTO_GLOBAL_HOLD_TYPES = {"Unavailable", "Before ERD", "Past Cutoff"}
 global_report_rows = []
 global_report_text_lines = []
 global_report_text_seen = set()
+global_port_check_failures = []
 latest_global_marker = ''
 latest_global_index = None
 process_latest_global_ops = False
@@ -447,14 +448,16 @@ def plan_order_value(date):
     return f"Plan {date.strftime('%a')} {date.strftime('%b')[0]}{date.day}"
 
 def global_booking_hold_type(port_data, execution_date, port_check_failed=False):
-    if port_check_failed or not port_data.get("valid"):
+    if port_check_failed:
+        return None
+    if not port_data.get("valid"):
         return "Unavailable"
 
     return global_booking_window_hold_type(port_data, execution_date)
 
 def global_load_in_hold_type(port_data, execution_date, port_check_failed=False):
     if port_check_failed:
-        return "Unavailable"
+        return None
     total = port_data.get("total")
     received = port_data.get("received")
     if total is not None and received is not None and total <= received:
@@ -472,7 +475,7 @@ def global_booking_window_hold_type(port_data, execution_date):
 
 def global_empty_out_hold_type(port_data, execution_date, port_check_failed=False):
     if port_check_failed:
-        return "Unavailable"
+        return None
     total = port_data.get("total")
     delivered = port_data.get("delivered")
     if total is not None and delivered is not None and total <= delivered:
@@ -515,7 +518,7 @@ def date_value(value):
     return value
 
 def update_global_order_from_port(order, port_data, execution_date, port_check_failed=False, hold_type=None):
-    if hold_type is None:
+    if hold_type is None and not port_check_failed:
         hold_type = global_booking_hold_type(port_data, execution_date, port_check_failed)
     changes = []
 
@@ -533,6 +536,9 @@ def update_global_order_from_port(order, port_data, execution_date, port_check_f
         if date_value(old_value) != value:
             setattr(order, attr, value)
             changes.append(f"{label} {old_value} -> {value}")
+
+    if port_check_failed:
+        return changes, hold_type
 
     old_hold = getattr(order, "HoldType", None)
     if hold_type:
@@ -660,6 +666,22 @@ def send_global_entry_check_report(report_rows):
     server.sendmail(emailfrom, [emailto], msg.as_string())
     server.quit()
     print(f"Sent Global entry check report to {emailto} with subject: {subject}", flush=True)
+
+def global_successful_report_marker_path(run_date=None):
+    if run_date is None:
+        run_date = datetime.date.today()
+    return addpath3(f"emaildocs/global_successful_report_{scac}_{run_date.strftime('%Y-%m-%d')}.txt")
+
+def read_global_successful_report_marker(run_date=None):
+    try:
+        with open(global_successful_report_marker_path(run_date)) as f:
+            return f.read().strip()
+    except:
+        return ''
+
+def write_global_successful_report_marker(marker, run_date=None):
+    with open(global_successful_report_marker_path(run_date), 'w') as f:
+        f.write(marker)
 
 def global_email_marker_path():
     return addpath3(f'emaildocs/global_latest_processed_{scac}.txt')
@@ -901,6 +923,7 @@ def global_port_review(cache, booking, execution_date, label):
         )
     except Exception as exc:
         port_check_failed = True
+        global_port_check_failures.append(f"{label} {booking}: {exc}")
         print(f"{label} {booking} port check failed: {exc}", flush=True)
 
     hold_type = global_booking_hold_type(port_data, execution_date, port_check_failed)
@@ -926,7 +949,8 @@ def collect_global_latest_report_text(bodylines, email_date):
             except Exception as exc:
                 port_data = default_global_port_data()
                 port_check_failed = True
-                hold_type = "Unavailable"
+                hold_type = None
+                global_port_check_failures.append(f"Global latest email booking {booking}: {exc}")
                 print(f"Global latest email booking {booking} report check failed: {exc}", flush=True)
             if role == "load_in":
                 hold_type = global_load_in_hold_type(port_data, execution_date, port_check_failed)
@@ -1207,7 +1231,8 @@ if 1==1:
                             )
                         except Exception as exc:
                             port_check_failed = True
-                            print(f"Global booking {b} port booking availability check failed; creating order with HoldType Unavailable: {exc}", flush=True)
+                            global_port_check_failures.append(f"Global booking {b}: {exc}")
+                            print(f"Global booking {b} port booking availability check failed; HoldType will not be changed from this failed check: {exc}", flush=True)
 
                         if report_role == "load_in":
                             hold_type = global_load_in_hold_type(port_data, execution_date, port_check_failed)
@@ -1374,7 +1399,8 @@ for cdat in cdata:
                 )
             except Exception as exc:
                 port_check_failed = True
-                print(f"Global container {con} in-booking {in_booking} port check failed; using HoldType Unavailable: {exc}", flush=True)
+                global_port_check_failures.append(f"Global container {con} in-booking {in_booking}: {exc}")
+                print(f"Global container {con} in-booking {in_booking} port check failed; HoldType will not be changed from this failed check: {exc}", flush=True)
 
             hold_type = global_load_in_hold_type(port_data, execution_date, port_check_failed)
             if not port_check_failed and hold_type == "Unavailable":
@@ -1428,9 +1454,24 @@ db.session.commit()
 if gjob==1:
     try:
         print(f"Preparing Global entry check report with {len(global_report_text_lines)} text line(s)", flush=True)
-        send_global_entry_check_report(global_report_rows)
-        if process_latest_global_ops and latest_global_marker and not GLOBAL_TEST_MODE:
-            write_global_processed_marker(latest_global_marker)
+        previous_success_marker = read_global_successful_report_marker()
+        if not GLOBAL_TEST_MODE and previous_success_marker:
+            print(
+                f"Global entry check report already sent successfully today; skipping duplicate email. "
+                f"Marker: {previous_success_marker}",
+                flush=True,
+            )
+        elif not GLOBAL_TEST_MODE and global_port_check_failures:
+            print(
+                f"Global entry check had {len(global_port_check_failures)} port check failure(s); "
+                "skipping email and leaving successful-run marker unset.",
+                flush=True,
+            )
+        else:
+            send_global_entry_check_report(global_report_rows)
+            if process_latest_global_ops and latest_global_marker and not GLOBAL_TEST_MODE:
+                write_global_processed_marker(latest_global_marker)
+                write_global_successful_report_marker(latest_global_marker)
     except Exception as exc:
         print(f"Could not send Global entry check report: {exc}", flush=True)
 close_booking_review_browser()
