@@ -14,7 +14,7 @@ import numpy as np
 # Set up calculation of work days, holidays, etc so that we can make projections
 ################################################################################
 ################ Define the Year to Date Stop Point ############################
-year, ytd_month, ytd_day = 2026, 9, 5
+year, ytd_month, ytd_day = 2026, 9, 19
 #year, ytd_month, ytd_day = 2025, 3, 22
 ytd = datetime.date(year, ytd_month, ytd_day)
 ################################################################################
@@ -25,7 +25,7 @@ try:
     nt = 'remote'
 except:
     print('Must have at least one argument...FELA or OSLM or NEVO')
-    scac = ('oslm')
+    scac = ('fela')
     nt = 'remote'
 
 scac = scac.upper()

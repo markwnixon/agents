@@ -305,6 +305,12 @@ except:
     scac = 'fela'
     nt = 'remote'
 
+try:
+    pinid = int(sys.argv[2])
+    print(f'Received input argument of pinid: {pinid}')
+except:
+    pinid = None
+
 scac = scac.upper()
 
 if scac == 'OSLM' or scac == 'FELA' or scac == 'NEVO':
@@ -1452,8 +1458,13 @@ contrys = 0
 print(f'Attempting to connect to database and table Pins....')
 while contrys < 4 and conyes == 0:
     try:
-        pdata = Pins.query.filter((Pins.OutPin == '0') &
-                (Pins.Active == 1) & (Pins.Date >= today) & (Pins.Maker == 'WEB')).all()
+        if pinid is not None:
+            print(f'Getting pin data for id {pinid}')
+            pdat = Pins.query.filter(Pins.id == pinid).first()
+            pdata = [pdat] if pdat is not None else []
+        else:
+            pdata = Pins.query.filter((Pins.OutPin == '0') &
+                    (Pins.Active == 1) & (Pins.Date >= today) & (Pins.Maker == 'WEB')).all()
         nruns = len(pdata)
         conyes = 1
     except:
@@ -1464,6 +1475,8 @@ while contrys < 4 and conyes == 0:
 if nruns == 0 or conyes == 0:
     if conyes == 0:
         print('Could not connect to database')
+    elif pinid is not None:
+        print(f'There is no pin required for id {pinid}')
     else:
         print(f'There are no pins required per database')
     quit()

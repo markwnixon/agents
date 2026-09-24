@@ -100,6 +100,7 @@ booking_review_playwright = None
 booking_review_browser = None
 booking_review_page = None
 AUTO_GLOBAL_HOLD_TYPES = {"Unavailable", "Before ERD", "Past Cutoff"}
+GLOBAL_NO_PROOF_TEXT = "No Proof Needed"
 global_report_rows = []
 global_report_text_lines = []
 global_report_text_seen = set()
@@ -550,6 +551,14 @@ def update_global_order_from_port(order, port_data, execution_date, port_check_f
         changes.append(f"HoldType {old_hold} -> None")
 
     return changes, hold_type
+
+def ensure_global_no_proof_needed(order):
+    changes = []
+    if clean_port_text(getattr(order, "Proof", "")) != GLOBAL_NO_PROOF_TEXT:
+        old_value = getattr(order, "Proof", None)
+        order.Proof = GLOBAL_NO_PROOF_TEXT
+        changes.append(f"Proof {old_value} -> {GLOBAL_NO_PROOF_TEXT}")
+    return changes
 
 def format_report_date(value):
     value = date_value(value)
@@ -1269,8 +1278,10 @@ if 1==1:
                             )
 
                     if bdat is not None:
+                        proof_changes = ensure_global_no_proof_needed(bdat)
                         if should_review_port:
                             changes, hold_type = update_global_order_from_port(bdat, port_data, execution_date, port_check_failed, hold_type)
+                            changes = proof_changes + changes
                             if apply_latest_ops or report_latest_booking:
                                 add_global_report_row(
                                     global_report_rows, b, execution_date, "Updated" if changes else "Existing",
@@ -1279,6 +1290,9 @@ if 1==1:
                             if changes:
                                 print(f"Updated existing Global booking {b}: {'; '.join(changes)}", flush=True)
                                 db.session.commit()
+                        elif proof_changes:
+                            print(f"Updated existing Global booking {b}: {'; '.join(proof_changes)}", flush=True)
+                            db.session.commit()
                         print(f'                Skipping creation for existing Global booking {book[0]} {book[1]} {book[2]}')
 
                     elif should_create_order:
@@ -1309,7 +1323,7 @@ if 1==1:
                                        Shipper='Global Business Link', Type=putsize, Label=None,
                                        Dropblock2='Global Business Link\n4000 Coolidge Ave K\nBaltimore, MD 21229',
                                        Dropblock1='Baltimore Seagirt\n2600 Broening Hwy\nBaltimore, MD 21224',
-                                       Commodity=None, Packing=None, Links=None, Hstat=-1, Istat=-1, Proof='No Proof Needed',
+                                       Commodity=None, Packing=None, Links=None, Hstat=-1, Istat=-1, Proof=GLOBAL_NO_PROOF_TEXT,
                                        Invoice=None, Gate=None, Package=None, Manifest=None, Scache=0, Pcache=0,
                                        Icache=0, Mcache=0, Pkcache=0, QBi=None, InvoTotal='370.00', Truck=None,
                                        Dropblock3=None, Date3=pulldate, Location3=None, InvoDate=None, PaidDate=None,
