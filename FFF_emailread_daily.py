@@ -454,7 +454,7 @@ def global_booking_hold_type(port_data, execution_date, port_check_failed=False)
     if not port_data.get("valid"):
         return "Unavailable"
 
-    return global_booking_window_hold_type(port_data, execution_date)
+    return None
 
 def global_load_in_hold_type(port_data, execution_date, port_check_failed=False):
     if port_check_failed:
@@ -481,7 +481,7 @@ def global_empty_out_hold_type(port_data, execution_date, port_check_failed=Fals
     delivered = port_data.get("delivered")
     if total is not None and delivered is not None and total <= delivered:
         return "Unavailable"
-    return global_booking_window_hold_type(port_data, execution_date)
+    return None
 
 def global_unavailable_reason(booking_role, port_data):
     total = port_data.get("total")
