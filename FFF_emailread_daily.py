@@ -61,6 +61,33 @@ import re
 import numpy as np
 from cronfuncs import newjo
 from datetime import timedelta
+from zoneinfo import ZoneInfo
+
+global_test_email_time = None
+if len(sys.argv) > 4:
+    if not GLOBAL_TEST_MODE:
+        raise SystemExit('Selecting a specific email requires test mode.')
+    try:
+        global_test_email_time = datetime.datetime.strptime(sys.argv[4], '%Y-%m-%d %H:%M')
+    except ValueError:
+        raise SystemExit('Email selection must use YYYY-MM-DD HH:MM (America/New_York).')
+
+def select_global_test_email(messages, target_time):
+    matches = []
+    for message_data in messages:
+        for response in message_data:
+            if not isinstance(response, tuple):
+                continue
+            raw = email.message_from_bytes(response[1])
+            sent = email.utils.parsedate_to_datetime(raw['Date'])
+            if sent.tzinfo is not None:
+                sent = sent.astimezone(ZoneInfo('America/New_York')).replace(tzinfo=None)
+            if sent.replace(second=0, microsecond=0) == target_time:
+                matches.append(message_data)
+            break
+    if len(matches) != 1:
+        raise SystemExit(f'Expected one Global email at {target_time}; found {len(matches)}. No jobs updated.')
+    return matches
 
 os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", os.path.join(os.path.dirname(__file__), ".ms-playwright"))
 try:
@@ -822,6 +849,21 @@ def global_hstat1_order_by_container(container):
         (Orders.Container == container)
     ).order_by(Orders.id.desc()).first()
 
+def record_global_in_booking(order, booking, execution_date):
+    booking = normalize_booking(booking)
+    if clean_port_text(order.BOL) != booking:
+        old_booking = order.BOL
+        order.BOL = booking
+        db.session.commit()
+        print(f"Global container {order.Container}: In-Book/BOL {old_booking} -> {booking}", flush=True)
+    out_booking = normalize_booking(clean_port_text(order.Booking))
+    if booking != out_booking:
+        add_global_report_text(
+            ("in_booking_changed", order.id, booking, execution_date),
+            f"Load-in {booking} container {order.Container}: inbound booking differs from "
+            f"original empty-out booking {out_booking or 'unknown'}; In-Book/BOL set to {booking}."
+        )
+
 def resolve_global_load_container(booking, container, execution_date, report_rows):
     if container:
         any_order = global_order_by_container(container)
@@ -838,17 +880,7 @@ def resolve_global_load_container(booking, container, execution_date, report_row
                 container_override=container,
             )
             return None
-        order_booking = clean_port_text(order.Booking)
-        order_bol = clean_port_text(order.BOL)
-        if booking not in (order_booking, order_bol):
-            add_global_report_row(
-                report_rows, booking, execution_date, "Load Container Issue",
-                default_global_port_data(), None, checked_override="No",
-                status_override="Issue - booking/container mismatch",
-                order=order,
-                changes=[f"Email booking {booking} does not match order Booking {order_booking} or BOL {order_bol}"],
-            )
-            return None
+        record_global_in_booking(order, booking, execution_date)
         return container
 
     any_order = global_order_by_booking(booking)
@@ -867,6 +899,7 @@ def resolve_global_load_container(booking, container, execution_date, report_row
         return None
 
     resolved = clean_port_text(order.Container).upper()
+    record_global_in_booking(order, booking, execution_date)
     add_global_report_row(
         report_rows, booking, execution_date, "Load Container Resolved",
         default_global_port_data(), None, checked_override="No",
@@ -1076,6 +1109,8 @@ if 1==1:
         if gjob==2:
             dayback=450
         datefrom = (datetime.date.today() - datetime.timedelta(dayback)).strftime("%d-%b-%Y")
+        if global_test_email_time is not None:
+            datefrom = global_test_email_time.strftime('%d-%b-%Y')
         #print(datefrom)
         username = usernames['infh']
         password = passwords['infh']
@@ -1086,6 +1121,10 @@ if 1==1:
         # msgs=get_emails(search('FROM','aalsawi@gblna.com',con),con)
         con.close()
         con.logout()
+
+        if global_test_email_time is not None:
+            msgs = select_global_test_email(msgs, global_test_email_time)
+            print(f'TEST MODE: selected Global email sent {global_test_email_time} America/New_York', flush=True)
 
         latest_global_msg = None
         latest_global_dt = None
@@ -1129,6 +1168,7 @@ if 1==1:
 
         bookings=[]
         norepeat=[]
+        global_load_containers = {}
         for j,msg in enumerate(msgs):
             raw=email.message_from_bytes(msg[0][1])
             body=get_global_message_text(raw)
@@ -1143,6 +1183,11 @@ if 1==1:
                 if skipit:
                     blist=get_bookings(body)
                     bodylines = body.splitlines()
+                    for line in bodylines:
+                        if global_line_role(line) == 'load_in':
+                            containers = container_p.findall(line)
+                            for load_booking in get_bookings(line):
+                                global_load_containers[(load_booking, getdate)] = containers[0].upper() if containers else ''
                     apply_latest_ops = process_latest_global_ops and j == latest_global_index
                     if apply_latest_ops:
                         print(f"Parsing latest Global email for report and pin queue: {latest_global_marker}", flush=True)
@@ -1211,10 +1256,25 @@ if 1==1:
                     f.write(b+' '+d1+' '+d2+'\n')
 
                 if gjob==1:
-                    bdat=global_order_by_booking(b)
+                    email_container = global_load_containers.get((b, book[2]))
+                    if email_container is not None:
+                        booking_role = 'load_in'
+                    bdat = global_order_by_container(email_container) if email_container else global_order_by_booking(b)
                     if is_completed_global_order(bdat):
                         print(f'                Skipping completed Global booking {b} with Hstat {bdat.Hstat}')
                         continue
+                    if booking_role == 'load_in' and report_latest_booking:
+                        load_order = (global_hstat1_order_by_container(email_container) if email_container
+                                      else global_hstat1_order_by_booking(b))
+                        if load_order is None or not clean_port_text(load_order.Container):
+                            add_global_report_text(
+                                ('load_order_issue', b, email_container, execution_date),
+                                f"Load-in {b} container {email_container or 'unknown'}: issue - "
+                                "no matching Global job with a container and Hstat 1; In-Book/BOL not updated."
+                            )
+                            continue
+                        bdat = load_order
+                        record_global_in_booking(bdat, b, execution_date)
                     pdat = People.query.filter(People.Company == 'Global Business Link').first()
                     bid = pdat.id
                     ldat = Drops.query.filter(Drops.Entity == 'Global Business Link').first()
