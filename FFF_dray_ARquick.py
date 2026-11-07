@@ -27,6 +27,7 @@ current_datetime = datetime.datetime.now()
 local_time_of_day = current_datetime.strftime("%H:%M:%S")
 
 exclude_these = ['FEL Ocean Div', 'First Eagle Logistics', 'One Stop Logistics', 'Nello Enterprise LLC', 'Jays Auto Service']
+OPEN_BALANCE_ISTATS = (2, 3, 4, 6, 7)
 
 
 #Handle the input arguments from script file
@@ -201,7 +202,7 @@ if scac != 'nogo':
                         dpaid += amt
                     elif special == 'Uncollectable':
                         dspecial += amt
-                    else:
+                    elif istat in OPEN_BALANCE_ISTATS:
                         dover = today.date() - datefor
                         dover = dover.days
                         custlist.append(idat.Shipper)
@@ -215,7 +216,7 @@ if scac != 'nogo':
                             d30 += amt
                         else:
                             u30 += amt
-            dopen = dtot - dpaid - dspecial
+            dopen = d120 + d90 + d60 + d30 + u30
             monthno = d1.month
             monthname = calendar.month_name[monthno]
             my = f'{monthname} {d1.year}'
@@ -276,7 +277,9 @@ if scac != 'nogo':
 
         for cust in custlist:
             if cust not in exclude_these:
-                idata = Orders.query.filter((Orders.Shipper == cust) & (Orders.Istat > 0)  & (Orders.InvoDate > cutoff)).all()
+                idata = Orders.query.filter((Orders.Shipper == cust) & Orders.Istat.in_(OPEN_BALANCE_ISTATS) & (Orders.InvoDate > cutoff)).all()
+                if not idata:
+                    continue
                 dtot = 0.00
                 d30 = 0.00
                 d60 = 0.00
@@ -307,7 +310,7 @@ if scac != 'nogo':
                         else:
                             u30 += amt
                 dopen = dtot - dpaid
-                input = Openi(Company=idat.Shipper, Mrev=int(dtot*100), Mpaid=int(dpaid*100), O120=int(d120*100), O90=int(d90*100), O60=int(d60*100), O30=int(d30*100), U30=int(u30*100), Open=int(dopen*100), Description=desc)
+                input = Openi(Company=cust, Mrev=int(dtot*100), Mpaid=int(dpaid*100), O120=int(d120*100), O90=int(d90*100), O60=int(d60*100), O30=int(d30*100), U30=int(u30*100), Open=int(dopen*100), Description=desc)
                 db.session.add(input)
                 tot += dtot
                 tpaid += dpaid
