@@ -1041,7 +1041,7 @@ def create_global_pin_queue_rows(pin_pairs, report_rows):
             changes=[f"Matched empty-out {outbook}", global_unavailable_reason("load_in", in_port_data)],
             container_override=incon,
         )
-        if in_hold is not None:
+        if in_failed or in_hold is not None:
             print(f"Skipping Global pin queue for load-in {inbook} {incon}: {global_window_status(in_hold, in_failed)}", flush=True)
             continue
 
@@ -1052,7 +1052,7 @@ def create_global_pin_queue_rows(pin_pairs, report_rows):
             out_port_data, out_hold, out_failed,
             changes=[f"Matched load-in {inbook} {incon}", global_unavailable_reason("empty_out", out_port_data)],
         )
-        if out_hold is not None:
+        if out_failed or out_hold is not None:
             print(f"Skipping Global pin queue for empty-out {outbook}: {global_window_status(out_hold, out_failed)}", flush=True)
             continue
 
